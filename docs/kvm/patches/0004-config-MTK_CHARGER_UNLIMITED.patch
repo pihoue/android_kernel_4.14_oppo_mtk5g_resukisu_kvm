@@ -1,0 +1,11 @@
+--- /tmp/out_config_before_v10.txt	2026-09-13 12:36:55.028479199 +0800
++++ /home/moao/resukisu_kernel/out/.config	2026-09-13 12:36:55.585482404 +0800
+@@ -2900,7 +2900,7 @@
+ # CONFIG_CHARGER_SY6974 is not set
+ # CONFIG_CHARGER_RT9759 is not set
+ # CONFIG_RT_PROP_CHGALGO is not set
+-# CONFIG_MTK_CHARGER_UNLIMITED is not set
++CONFIG_MTK_CHARGER_UNLIMITED=y
+ # CONFIG_CHARGER_BQ25601 is not set
+ # CONFIG_CHARGER_SGM41511 is not set
+ # CONFIG_LOAD_SWITCH_RT9750 is not set

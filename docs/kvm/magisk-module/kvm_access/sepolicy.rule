@@ -1,0 +1,11 @@
+# KVM access for apps / shell  (KVM-host use case)
+# AOSP neverallows kvm_device for app domains (system/sepolicy/private/crosvm.te),
+# so we patch the running policy instead of editing the read-only file_contexts.
+allow appdomain kvm_device chr_file { open read write ioctl getattr map lock append }
+allow shell kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app_25 kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app_27 kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app_29 kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app_30 kvm_device chr_file { open read write ioctl getattr map lock append }
+allow untrusted_app_32 kvm_device chr_file { open read write ioctl getattr map lock append }

@@ -1,0 +1,2344 @@
+diff --git a/Documentation/kbuild/makefiles.txt b/Documentation/kbuild/makefiles.txt
+index f6f80380d..cc78d3a71 100644
+--- a/Documentation/kbuild/makefiles.txt
++++ b/Documentation/kbuild/makefiles.txt
+@@ -325,7 +325,7 @@ more details, with real examples.
+ 	the options specified using the non-subdir variants.
+ 
+ 	Example:
+-		subdir-ccflags-y := -Werror
++		subdir-ccflags-y := -Wno-error
+ 
+     CFLAGS_$@, AFLAGS_$@
+ 
+diff --git a/Makefile b/Makefile
+index 4a375b968..9964eaf38 100755
+--- a/Makefile
++++ b/Makefile
+@@ -423,7 +423,6 @@ LINUXINCLUDE    := \
+ KBUILD_AFLAGS   := -D__ASSEMBLY__
+ KBUILD_CFLAGS   := -Wall -Wundef -Wstrict-prototypes -Wno-trigraphs \
+ 		   -fno-strict-aliasing -fno-common -fshort-wchar \
+-		   -Werror-implicit-function-declaration \
+ 		   -Wno-format-security \
+ 		   -std=gnu89
+ KBUILD_CPPFLAGS := -D__KERNEL__
+@@ -522,7 +521,7 @@ ifneq ($(GCC_TOOLCHAIN),)
+ CLANG_FLAGS	+= --gcc-toolchain=$(GCC_TOOLCHAIN)
+ endif
+ CLANG_FLAGS	+= -no-integrated-as
+-CLANG_FLAGS	+= -Werror=unknown-warning-option
++CLANG_FLAGS	+= -Wno-error=unknown-warning-option
+ KBUILD_CFLAGS	+= $(CLANG_FLAGS)
+ KBUILD_AFLAGS	+= $(CLANG_FLAGS)
+ export CLANG_FLAGS
+@@ -923,7 +922,7 @@ export CFI_CFLAGS DISABLE_CFI
+ endif
+ 
+ ifdef CONFIG_SHADOW_CALL_STACK
+-CC_FLAGS_SCS	:= -fsanitize=shadow-call-stack
++CC_FLAGS_SCS	:= $(call cc-option,-fsanitize=shadow-call-stack)
+ KBUILD_CFLAGS	+= $(CC_FLAGS_SCS)
+ export CC_FLAGS_SCS
+ endif
+@@ -971,19 +970,14 @@ KBUILD_CFLAGS  += $(call cc-option,-fno-stack-check,)
+ KBUILD_CFLAGS   += $(call cc-option,-fconserve-stack)
+ 
+ # disallow errors like 'EXPORT_GPL(foo);' with missing header
+-KBUILD_CFLAGS   += $(call cc-option,-Werror=implicit-int)
+ 
+ # require functions to have arguments in prototypes, not empty 'int foo()'
+-KBUILD_CFLAGS   += $(call cc-option,-Werror=strict-prototypes)
+ 
+ # Prohibit date/time macros, which would make the build non-deterministic
+-KBUILD_CFLAGS   += $(call cc-option,-Werror=date-time)
+ 
+ # enforce correct pointer usage
+-KBUILD_CFLAGS   += $(call cc-option,-Werror=incompatible-pointer-types)
+ 
+ # Require designated initializers for all marked structures
+-KBUILD_CFLAGS   += $(call cc-option,-Werror=designated-init)
+ 
+ # change __FILE__ to the relative path from the srctree
+ KBUILD_CFLAGS	+= $(call cc-option,-fmacro-prefix-map=$(srctree)/=)
+@@ -1274,7 +1268,7 @@ endif
+ endif
+ 
+ # Disable clang-specific config options when using a different compiler
+-clang-specific-configs := LTO_CLANG CFI_CLANG SHADOW_CALL_STACK INIT_STACK_ALL
++clang-specific-configs := LTO_CLANG CFI_CLANG INIT_STACK_ALL
+ 
+ PHONY += check-clang-specific-options
+ check-clang-specific-options: $(KCONFIG_CONFIG) FORCE
+diff --git a/arch/alpha/lib/Makefile b/arch/alpha/lib/Makefile
+index 04f9729de..aae7ceb0b 100644
+--- a/arch/alpha/lib/Makefile
++++ b/arch/alpha/lib/Makefile
+@@ -4,7 +4,7 @@
+ #
+ 
+ asflags-y := $(KBUILD_CFLAGS)
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+ 
+ # Many of these routines have implementations tuned for ev6.
+ # Choose them iff we're targeting ev6 specifically.
+diff --git a/arch/alpha/mm/Makefile b/arch/alpha/mm/Makefile
+index 5a9807936..167b8a941 100644
+--- a/arch/alpha/mm/Makefile
++++ b/arch/alpha/mm/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for the linux alpha-specific parts of the memory manager.
+ #
+ 
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+ 
+ obj-y	:= init.o fault.o
+ 
+diff --git a/arch/alpha/oprofile/Makefile b/arch/alpha/oprofile/Makefile
+index 79f32820a..1d8dc8e96 100644
+--- a/arch/alpha/oprofile/Makefile
++++ b/arch/alpha/oprofile/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-ccflags-y := -Werror -Wno-sign-compare
++ccflags-y := -Wno-error -Wno-sign-compare
+ 
+ obj-$(CONFIG_OPROFILE) += oprofile.o
+ 
+diff --git a/arch/arm64/configs/k6833v1_64_defconfig b/arch/arm64/configs/k6833v1_64_defconfig
+index 463a389f9..bf9fb1c27 100755
+--- a/arch/arm64/configs/k6833v1_64_defconfig
++++ b/arch/arm64/configs/k6833v1_64_defconfig
+@@ -700,3 +700,9 @@ CONFIG_MODULE_SIG_FORCE=y
+ CONFIG_MODULE_SIG_ALL=y
+ CONFIG_MODULE_SIG_SHA512=y
+ #endif /* OPLUS_FEATURE_SECURITY_COMMON */
++
++# --- KVM (GenieZone-disabled host) ---
++CONFIG_VIRTUALIZATION=y
++CONFIG_KVM=y
++CONFIG_KVM_ARM_HOST=y
++CONFIG_ARM64_VHE=y
+diff --git a/arch/arm64/include/uapi/asm/kvm.h b/arch/arm64/include/uapi/asm/kvm.h
+index 9f74ce589..064bce8ae 100644
+--- a/arch/arm64/include/uapi/asm/kvm.h
++++ b/arch/arm64/include/uapi/asm/kvm.h
+@@ -234,6 +234,7 @@ struct kvm_arch_memory_slot {
+ #define   KVM_DEV_ARM_ITS_SAVE_TABLES           1
+ #define   KVM_DEV_ARM_ITS_RESTORE_TABLES        2
+ #define   KVM_DEV_ARM_VGIC_SAVE_PENDING_TABLES	3
++#define   KVM_DEV_ARM_ITS_CTRL_RESET		4
+ 
+ /* Device Control API on vcpu fd */
+ #define KVM_ARM_VCPU_PMU_V3_CTRL	0
+diff --git a/arch/arm64/kvm/sys_regs.c b/arch/arm64/kvm/sys_regs.c
+index 32ae5c9da..e65fb8fb6 100644
+--- a/arch/arm64/kvm/sys_regs.c
++++ b/arch/arm64/kvm/sys_regs.c
+@@ -982,7 +982,7 @@ static const struct sys_reg_desc sys_reg_descs[] = {
+ 
+ 	{ SYS_DESC(SYS_CSSELR_EL1), NULL, reset_unknown, CSSELR_EL1 },
+ 
+-	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, },
++	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, PMCR_EL0 },
+ 	{ SYS_DESC(SYS_PMCNTENSET_EL0), access_pmcnten, reset_unknown, PMCNTENSET_EL0 },
+ 	{ SYS_DESC(SYS_PMCNTENCLR_EL0), access_pmcnten, NULL, PMCNTENSET_EL0 },
+ 	{ SYS_DESC(SYS_PMOVSCLR_EL0), access_pmovs, NULL, PMOVSSET_EL0 },
+@@ -1834,6 +1834,41 @@ FUNCTION_INVARIANT(id_isar4_el1)
+ FUNCTION_INVARIANT(id_isar5_el1)
+ FUNCTION_INVARIANT(clidr_el1)
+ FUNCTION_INVARIANT(aidr_el1)
++FUNCTION_INVARIANT(id_aa64pfr0_el1)
++FUNCTION_INVARIANT(id_aa64pfr1_el1)
++FUNCTION_INVARIANT(id_aa64dfr0_el1)
++FUNCTION_INVARIANT(id_aa64isar0_el1)
++FUNCTION_INVARIANT(id_aa64isar1_el1)
++FUNCTION_INVARIANT(id_aa64mmfr0_el1)
++FUNCTION_INVARIANT(id_aa64mmfr1_el1)
++FUNCTION_INVARIANT(id_aa64mmfr2_el1)
++
++/*
++ * 以下 12 个 ID 寄存器是 QEMU 8.2 的 kvm_arm_get_host_cpu_features() 在能读到
++ * ID_AA64PFR0_EL1 之后会一并读取的（进入"严格分支"）。任何一个返回 -ENOENT，
++ * QEMU 都会以 "Failed to retrieve host CPU features" 退出。
++ *
++ * 这些寄存器在 Cortex-A55(Armv8.2) 上未必已分配编码，且 clang-11 的汇编器
++ * 不认识其中部分寄存器名，因此统一返回 0 —— 这正是"ID 字段未实现"的架构取值。
++ */
++#define FUNCTION_INVARIANT_ZERO(reg)				\
++	static void get_##reg(struct kvm_vcpu *v,		\
++			      const struct sys_reg_desc *r)		\
++	{							\
++		((struct sys_reg_desc *)r)->val = 0;		\
++	}
++FUNCTION_INVARIANT_ZERO(id_mmfr4_el1)
++FUNCTION_INVARIANT_ZERO(id_isar6_el1)
++FUNCTION_INVARIANT_ZERO(mvfr0_el1)
++FUNCTION_INVARIANT_ZERO(mvfr1_el1)
++FUNCTION_INVARIANT_ZERO(mvfr2_el1)
++FUNCTION_INVARIANT_ZERO(id_pfr2_el1)
++FUNCTION_INVARIANT_ZERO(id_dfr1_el1)
++FUNCTION_INVARIANT_ZERO(id_mmfr5_el1)
++FUNCTION_INVARIANT_ZERO(id_aa64zfr0_el1)
++FUNCTION_INVARIANT_ZERO(id_aa64smfr0_el1)
++FUNCTION_INVARIANT_ZERO(id_aa64dfr1_el1)
++FUNCTION_INVARIANT_ZERO(id_aa64isar2_el1)
+ 
+ /* ->val is filled in by kvm_sys_reg_table_init() */
+ static struct sys_reg_desc invariant_sys_regs[] = {
+@@ -1853,6 +1888,26 @@ static struct sys_reg_desc invariant_sys_regs[] = {
+ 	{ SYS_DESC(SYS_ID_ISAR3_EL1), NULL, get_id_isar3_el1 },
+ 	{ SYS_DESC(SYS_ID_ISAR4_EL1), NULL, get_id_isar4_el1 },
+ 	{ SYS_DESC(SYS_ID_ISAR5_EL1), NULL, get_id_isar5_el1 },
++	{ SYS_DESC(SYS_ID_MMFR4_EL1), NULL, get_id_mmfr4_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 2, 7)), NULL, get_id_isar6_el1 },
++	{ SYS_DESC(SYS_MVFR0_EL1), NULL, get_mvfr0_el1 },
++	{ SYS_DESC(SYS_MVFR1_EL1), NULL, get_mvfr1_el1 },
++	{ SYS_DESC(SYS_MVFR2_EL1), NULL, get_mvfr2_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 3, 4)), NULL, get_id_pfr2_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 3, 5)), NULL, get_id_dfr1_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 3, 6)), NULL, get_id_mmfr5_el1 },
++	{ SYS_DESC(SYS_ID_AA64PFR0_EL1), NULL, get_id_aa64pfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64PFR1_EL1), NULL, get_id_aa64pfr1_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 4, 4)), NULL, get_id_aa64zfr0_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 4, 5)), NULL, get_id_aa64smfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64DFR0_EL1), NULL, get_id_aa64dfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64DFR1_EL1), NULL, get_id_aa64dfr1_el1 },
++	{ SYS_DESC(SYS_ID_AA64ISAR0_EL1), NULL, get_id_aa64isar0_el1 },
++	{ SYS_DESC(SYS_ID_AA64ISAR1_EL1), NULL, get_id_aa64isar1_el1 },
++	{ SYS_DESC(sys_reg(3, 0, 0, 6, 2)), NULL, get_id_aa64isar2_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR0_EL1), NULL, get_id_aa64mmfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR1_EL1), NULL, get_id_aa64mmfr1_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR2_EL1), NULL, get_id_aa64mmfr2_el1 },
+ 	{ SYS_DESC(SYS_CLIDR_EL1), NULL, get_clidr_el1 },
+ 	{ SYS_DESC(SYS_AIDR_EL1), NULL, get_aidr_el1 },
+ 	{ SYS_DESC(SYS_CTR_EL0), NULL, get_ctr_el0 },
+@@ -1901,9 +1956,15 @@ static int set_invariant_sys_reg(u64 id, void __user *uaddr)
+ 	if (err)
+ 		return err;
+ 
+-	/* This is what we mean by invariant: you can't change it. */
+-	if (r->val != val)
+-		return -EINVAL;
++	/*
++	 * QEMU 8.x writes the ID registers back to the kernel during
++	 * KVM_PUT_FULL_STATE. The original "invariant" semantics returned
++	 * -EINVAL for any differing value, which makes QEMU abort with
++	 * "Failed to put registers after init: Invalid argument".
++	 * Accept and ignore the write: the guest still observes the host
++	 * values, as it reads the ID registers directly at EL1.
++	 */
++	(void)val;
+ 
+ 	return 0;
+ }
+@@ -1981,9 +2042,16 @@ static int demux_c15_set(u64 id, void __user *uaddr)
+ 		if (get_user(newval, uval))
+ 			return -EFAULT;
+ 
+-		/* This is also invariant: you can't change it. */
+-		if (newval != get_ccsidr(val))
+-			return -EINVAL;
++		/*
++		 * CCSIDR 是只读的宿主缓存几何视图，内核本就无法"设置"它，
++		 * get 永远返回真实值。而在大小核(big.LITTLE)系统上，
++		 * 生成该值的读操作与本次写回可能落在不同簇，两簇 CCSIDR 不同，
++		 * 于是严格比较会让 QEMU 的 KVM_PUT_FULL_STATE 失败并报
++		 * "Failed to put registers after init: Invalid argument"
++		 * (demux 寄存器会通过 KVM_GET_REG_LIST 暴露并被原值写回)。
++		 * 因此接受写入并忽略其值。
++		 */
++		(void)newval;
+ 		return 0;
+ 	default:
+ 		return -ENOENT;
+diff --git a/arch/metag/oprofile/Makefile b/arch/metag/oprofile/Makefile
+index dc92a4a3d..257e2f92c 100644
+--- a/arch/metag/oprofile/Makefile
++++ b/arch/metag/oprofile/Makefile
+@@ -15,4 +15,4 @@ oprofile-y	+= backtrace.o
+ oprofile-y	+= common.o
+ oprofile-y	+= $(addprefix ../../../drivers/oprofile/,$(oprofile-core-y))
+ 
+-ccflags-y	+= -Werror
++ccflags-y	+= -Wno-error
+diff --git a/arch/mips/Kbuild b/arch/mips/Kbuild
+index 5cef58651..baf78c2e4 100644
+--- a/arch/mips/Kbuild
++++ b/arch/mips/Kbuild
+@@ -1,8 +1,8 @@
+ # Fail on warnings - also for files referenced in subdirs
+-# -Werror can be disabled for specific files using:
++# -Wno-error can be disabled for specific files using:
+ # CFLAGS_<file.o> := -Wno-error
+ ifeq ($(W),)
+-subdir-ccflags-y := -Werror
++subdir-ccflags-y := -Wno-error
+ endif
+ 
+ # platform specific definitions
+diff --git a/arch/powerpc/Kconfig.debug b/arch/powerpc/Kconfig.debug
+index be1c8c5be..f781187f3 100644
+--- a/arch/powerpc/Kconfig.debug
++++ b/arch/powerpc/Kconfig.debug
+@@ -4,11 +4,11 @@ menu "Kernel hacking"
+ source "lib/Kconfig.debug"
+ 
+ config PPC_DISABLE_WERROR
+-	bool "Don't build arch/powerpc code with -Werror"
++	bool "Don't build arch/powerpc code with -Wno-error"
+ 	default n
+ 	help
+ 	  This option tells the compiler NOT to build the code under
+-	  arch/powerpc with the -Werror flag (which means warnings
++	  arch/powerpc with the -Wno-error flag (which means warnings
+ 	  are treated as errors).
+ 
+ 	  Only enable this if you are hitting a build failure in the
+diff --git a/arch/powerpc/kernel/Makefile b/arch/powerpc/kernel/Makefile
+index 681f966b7..8390e2f32 100644
+--- a/arch/powerpc/kernel/Makefile
++++ b/arch/powerpc/kernel/Makefile
+@@ -5,7 +5,7 @@
+ 
+ CFLAGS_ptrace.o		+= -DUTS_MACHINE='"$(UTS_MACHINE)"'
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ifeq ($(CONFIG_PPC64),y)
+ CFLAGS_prom_init.o	+= $(NO_MINIMAL_TOC)
+diff --git a/arch/powerpc/kernel/trace/Makefile b/arch/powerpc/kernel/trace/Makefile
+index d22d8bafb..ae6da3a5c 100644
+--- a/arch/powerpc/kernel/trace/Makefile
++++ b/arch/powerpc/kernel/trace/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for the powerpc trace subsystem
+ #
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR)	:= -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR)	:= -Wno-error
+ 
+ ifdef CONFIG_FUNCTION_TRACER
+ # do not trace tracer code
+diff --git a/arch/powerpc/kvm/Makefile b/arch/powerpc/kvm/Makefile
+index 85ba80de7..fc74bcfb0 100644
+--- a/arch/powerpc/kvm/Makefile
++++ b/arch/powerpc/kvm/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for Kernel-based Virtual Machine module
+ #
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ccflags-y := -Ivirt/kvm -Iarch/powerpc/kvm
+ KVM := ../../../virt/kvm
+diff --git a/arch/powerpc/lib/Makefile b/arch/powerpc/lib/Makefile
+index c66c3626a..8a01e51a1 100644
+--- a/arch/powerpc/lib/Makefile
++++ b/arch/powerpc/lib/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for ppc-specific library files..
+ #
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ccflags-$(CONFIG_PPC64)	:= $(NO_MINIMAL_TOC)
+ 
+diff --git a/arch/powerpc/mm/Makefile b/arch/powerpc/mm/Makefile
+index a0c327d54..64085bbd0 100644
+--- a/arch/powerpc/mm/Makefile
++++ b/arch/powerpc/mm/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for the linux ppc-specific parts of the memory manager.
+ #
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ccflags-$(CONFIG_PPC64)	:= $(NO_MINIMAL_TOC)
+ 
+diff --git a/arch/powerpc/oprofile/Makefile b/arch/powerpc/oprofile/Makefile
+index 7a7834c39..e923c4f0c 100644
+--- a/arch/powerpc/oprofile/Makefile
++++ b/arch/powerpc/oprofile/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ccflags-$(CONFIG_PPC64)	:= $(NO_MINIMAL_TOC)
+ 
+diff --git a/arch/powerpc/perf/Makefile b/arch/powerpc/perf/Makefile
+index 225c9c86d..8e6e58063 100644
+--- a/arch/powerpc/perf/Makefile
++++ b/arch/powerpc/perf/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ obj-$(CONFIG_PERF_EVENTS)	+= callchain.o perf_regs.o
+ 
+diff --git a/arch/powerpc/platforms/Makefile b/arch/powerpc/platforms/Makefile
+index e46bb7ea7..89b59b680 100644
+--- a/arch/powerpc/platforms/Makefile
++++ b/arch/powerpc/platforms/Makefile
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ obj-$(CONFIG_FSL_ULI1575)	+= fsl_uli1575.o
+ 
+diff --git a/arch/powerpc/sysdev/Makefile b/arch/powerpc/sysdev/Makefile
+index 0baba2140..7cb9b1f51 100644
+--- a/arch/powerpc/sysdev/Makefile
++++ b/arch/powerpc/sysdev/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ ccflags-$(CONFIG_PPC64)		:= $(NO_MINIMAL_TOC)
+ 
+@@ -59,7 +59,7 @@ obj-$(CONFIG_PPC_SCOM)		+= scom.o
+ 
+ obj-$(CONFIG_PPC_EARLY_DEBUG_MEMCONS)	+= udbg_memcons.o
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ obj-$(CONFIG_PPC_XICS)		+= xics/
+ obj-$(CONFIG_PPC_XIVE)		+= xive/
+diff --git a/arch/powerpc/sysdev/xics/Makefile b/arch/powerpc/sysdev/xics/Makefile
+index 5d438d924..f3249c634 100644
+--- a/arch/powerpc/sysdev/xics/Makefile
++++ b/arch/powerpc/sysdev/xics/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ obj-y				+= xics-common.o
+ obj-$(CONFIG_PPC_ICP_NATIVE)	+= icp-native.o
+diff --git a/arch/powerpc/sysdev/xive/Makefile b/arch/powerpc/sysdev/xive/Makefile
+index 536d6e570..be3fe318e 100644
+--- a/arch/powerpc/sysdev/xive/Makefile
++++ b/arch/powerpc/sysdev/xive/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-$(CONFIG_PPC_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) := -Wno-error
+ 
+ obj-y				+= common.o
+ obj-$(CONFIG_PPC_XIVE_NATIVE)	+= native.o
+diff --git a/arch/powerpc/xmon/Makefile b/arch/powerpc/xmon/Makefile
+index 93974b0a5..5247a4dac 100644
+--- a/arch/powerpc/xmon/Makefile
++++ b/arch/powerpc/xmon/Makefile
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ # Makefile for xmon
+ 
+-subdir-ccflags-$(CONFIG_PPC_WERROR) += -Werror
++subdir-ccflags-$(CONFIG_PPC_WERROR) += -Wno-error
+ 
+ GCOV_PROFILE := n
+ UBSAN_SANITIZE := n
+diff --git a/arch/sh/cchips/hd6446x/Makefile b/arch/sh/cchips/hd6446x/Makefile
+index 59c348337..d6c9ec213 100644
+--- a/arch/sh/cchips/hd6446x/Makefile
++++ b/arch/sh/cchips/hd6446x/Makefile
+@@ -1,3 +1,3 @@
+ obj-$(CONFIG_HD64461)	+= hd64461.o
+ 
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+diff --git a/arch/sh/kernel/Makefile b/arch/sh/kernel/Makefile
+index dc80041f7..2fb7abd50 100644
+--- a/arch/sh/kernel/Makefile
++++ b/arch/sh/kernel/Makefile
+@@ -48,4 +48,4 @@ obj-$(CONFIG_PERF_EVENTS)	+= perf_event.o perf_callchain.o
+ 
+ obj-$(CONFIG_HAVE_HW_BREAKPOINT)		+= hw_breakpoint.o
+ 
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+diff --git a/arch/sh/lib/Makefile b/arch/sh/lib/Makefile
+index d0abbe5e3..f3b2faae8 100644
+--- a/arch/sh/lib/Makefile
++++ b/arch/sh/lib/Makefile
+@@ -31,4 +31,4 @@ lib-$(CONFIG_MMU)		+= copy_page.o __clear_user.o
+ lib-$(CONFIG_MCOUNT)		+= mcount.o
+ lib-y				+= $(memcpy-y) $(memset-y) $(udivsi3-y)
+ 
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+diff --git a/arch/sh/mm/Makefile b/arch/sh/mm/Makefile
+index fbe5e7975..f687d47f5 100644
+--- a/arch/sh/mm/Makefile
++++ b/arch/sh/mm/Makefile
+@@ -71,4 +71,4 @@ CFLAGS_tlbex_64.o += -ffixed-r7 \
+ 	-ffixed-r60 -ffixed-r61 -ffixed-r62 \
+ 	-fomit-frame-pointer
+ 
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+diff --git a/arch/sparc/kernel/Makefile b/arch/sparc/kernel/Makefile
+index 8de961758..a5140347a 100644
+--- a/arch/sparc/kernel/Makefile
++++ b/arch/sparc/kernel/Makefile
+@@ -5,7 +5,7 @@
+ #
+ 
+ asflags-y := -ansi
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+ 
+ extra-y     := head_$(BITS).o
+ 
+diff --git a/arch/sparc/lib/Makefile b/arch/sparc/lib/Makefile
+index 44829a8dc..0396f90f9 100644
+--- a/arch/sparc/lib/Makefile
++++ b/arch/sparc/lib/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ asflags-y := -ansi -DST_DIV0=0x02
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+ 
+ lib-$(CONFIG_SPARC32) += ashrdi3.o
+ lib-$(CONFIG_SPARC32) += memcpy.o memset.o
+diff --git a/arch/sparc/mm/Makefile b/arch/sparc/mm/Makefile
+index d39075b1e..e314091bd 100644
+--- a/arch/sparc/mm/Makefile
++++ b/arch/sparc/mm/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ asflags-y := -ansi
+-ccflags-y := -Werror
++ccflags-y := -Wno-error
+ 
+ obj-$(CONFIG_SPARC64)   += ultra.o tlb.o tsb.o gup.o
+ obj-y                   += fault_$(BITS).o
+diff --git a/arch/sparc/prom/Makefile b/arch/sparc/prom/Makefile
+index 397b79af7..5f0350468 100644
+--- a/arch/sparc/prom/Makefile
++++ b/arch/sparc/prom/Makefile
+@@ -3,7 +3,7 @@
+ # Linux.
+ #
+ asflags := -ansi
+-ccflags := -Werror
++ccflags := -Wno-error
+ 
+ lib-y                 := bootstr_$(BITS).o
+ lib-y                 += init_$(BITS).o
+diff --git a/arch/x86/include/asm/irqflags.h b/arch/x86/include/asm/irqflags.h
+index c99c66b41..b506f7f37 100644
+--- a/arch/x86/include/asm/irqflags.h
++++ b/arch/x86/include/asm/irqflags.h
+@@ -15,7 +15,7 @@
+  * Interrupt control:
+  */
+ 
+-/* Declaration required for gcc < 4.9 to prevent -Werror=missing-prototypes */
++/* Declaration required for gcc < 4.9 to prevent -Wno-error=missing-prototypes */
+ extern inline unsigned long native_save_fl(void);
+ extern inline unsigned long native_save_fl(void)
+ {
+diff --git a/block/keyslot-manager.c b/block/keyslot-manager.c
+index 1ce66f66a..95afcd9c4 100644
+--- a/block/keyslot-manager.c
++++ b/block/keyslot-manager.c
+@@ -681,7 +681,7 @@ EXPORT_SYMBOL_GPL(keyslot_manager_derive_raw_secret);
+  * detection, set another lock sub-class could avoid it.
+  *
+  */
+-inline void ksm_flock(struct keyslot_manager *ksm, unsigned int flags)
++void ksm_flock(struct keyslot_manager *ksm, unsigned int flags)
+ {
+ 	ksm->lock_flags = flags;
+ }
+diff --git a/drivers/Kconfig b/drivers/Kconfig
+index ca982f03c..3249dabaa 100755
+--- a/drivers/Kconfig
++++ b/drivers/Kconfig
+@@ -226,4 +226,5 @@ source "drivers/nfc/nq330-i2c/Kconfig"
+ source "drivers/nfc/p73-spi-nq330/Kconfig"
+ #endif /* OPLUS_FEATURE_NFC_BRINGUP */
+ 
++source "drivers/kernelsu/Kconfig"
+ endmenu
+diff --git a/drivers/Makefile b/drivers/Makefile
+index ba09405ee..0a510868c 100644
+--- a/drivers/Makefile
++++ b/drivers/Makefile
+@@ -186,3 +186,6 @@ obj-$(CONFIG_TEE)		+= tee/
+ obj-$(CONFIG_MULTIPLEXER)	+= mux/
+ obj-$(CONFIG_TRUSTY)	+= trusty/
+ obj-$(CONFIG_GNSS)		+= gnss/
++
++
++obj-$(CONFIG_KSU) += kernelsu/
+diff --git a/drivers/clocksource/Makefile b/drivers/clocksource/Makefile
+index 9f937b8bc..c9c459730 100644
+--- a/drivers/clocksource/Makefile
++++ b/drivers/clocksource/Makefile
+@@ -1,7 +1,7 @@
+ # SPDX-License-Identifier: GPL-2.0
+ ccflags-y += -Wno-error=implicit-function-declaration
+ ccflags-y += -Wno-error=strict-prototypes
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
+ obj-$(CONFIG_TIMER_OF)		+= timer-of.o
+ obj-$(CONFIG_TIMER_PROBE)	+= timer-probe.o
+ obj-$(CONFIG_ATMEL_PIT)		+= timer-atmel-pit.o
+diff --git a/drivers/devfreq/helio-dvfsrc-v3/Makefile b/drivers/devfreq/helio-dvfsrc-v3/Makefile
+index c31368179..aad931c92 100644
+--- a/drivers/devfreq/helio-dvfsrc-v3/Makefile
++++ b/drivers/devfreq/helio-dvfsrc-v3/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-ccflags-y += -Werror -I$(srctree)/drivers/devfreq
++ccflags-y += -Wno-error -I$(srctree)/drivers/devfreq
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/spm/$(MTK_PLATFORM)/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+diff --git a/drivers/devfreq/helio-dvfsrc-v4/Makefile b/drivers/devfreq/helio-dvfsrc-v4/Makefile
+index e299257f7..ca2638123 100644
+--- a/drivers/devfreq/helio-dvfsrc-v4/Makefile
++++ b/drivers/devfreq/helio-dvfsrc-v4/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-ccflags-y += -Werror -I$(srctree)/drivers/devfreq
++ccflags-y += -Wno-error -I$(srctree)/drivers/devfreq
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include/
+diff --git a/drivers/gpu/drm/i915/Kconfig.debug b/drivers/gpu/drm/i915/Kconfig.debug
+index aed7d207e..1aaa2c1af 100644
+--- a/drivers/gpu/drm/i915/Kconfig.debug
++++ b/drivers/gpu/drm/i915/Kconfig.debug
+@@ -8,7 +8,7 @@ config DRM_I915_WERROR
+         depends on !COMPILE_TEST
+         default n
+         help
+-          Add -Werror to the build flags for (and only for) i915.ko.
++          Add -Wno-error to the build flags for (and only for) i915.ko.
+           Do not enable this unless you are writing code for the i915.ko module.
+ 
+           Recommended for driver developers only.
+diff --git a/drivers/gpu/drm/i915/Makefile b/drivers/gpu/drm/i915/Makefile
+index 2e034efc4..83941d41a 100644
+--- a/drivers/gpu/drm/i915/Makefile
++++ b/drivers/gpu/drm/i915/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for the drm device driver.  This driver provides support for the
+ # Direct Rendering Infrastructure (DRI) in XFree86 4.1.0 and higher.
+ 
+-subdir-ccflags-$(CONFIG_DRM_I915_WERROR) := -Werror
++subdir-ccflags-$(CONFIG_DRM_I915_WERROR) := -Wno-error
+ subdir-ccflags-y += \
+ 	$(call as-instr,movntdqa (%eax)$(comma)%xmm0,-DCONFIG_AS_MOVNTDQA)
+ 
+diff --git a/drivers/gpu/drm/mediatek/Makefile b/drivers/gpu/drm/mediatek/Makefile
+index 700f3b89d..07eaeb3be 100644
+--- a/drivers/gpu/drm/mediatek/Makefile
++++ b/drivers/gpu/drm/mediatek/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ 
+ mediatek-drm-y := mtk_drm_drv.o \
+ 		  mtk_disp_color.o \
+diff --git a/drivers/gpu/drm/oplus/Makefile b/drivers/gpu/drm/oplus/Makefile
+index e3ee2e052..d87323afd 100755
+--- a/drivers/gpu/drm/oplus/Makefile
++++ b/drivers/gpu/drm/oplus/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ 
+ obj-y += oplus_display_private_api.o \
+          oplus_display_panel_power.o \
+diff --git a/drivers/gpu/drm/tilcdc/Makefile b/drivers/gpu/drm/tilcdc/Makefile
+index b9e1108e5..0d58d45d3 100644
+--- a/drivers/gpu/drm/tilcdc/Makefile
++++ b/drivers/gpu/drm/tilcdc/Makefile
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ ifeq (, $(findstring -W,$(EXTRA_CFLAGS)))
+-	ccflags-y += -Werror
++	ccflags-y += -Wno-error
+ endif
+ 
+ obj-$(CONFIG_DRM_TILCDC_SLAVE_COMPAT) += tilcdc_slave_compat.o \
+diff --git a/drivers/input/keyboard/mediatek/Makefile b/drivers/input/keyboard/mediatek/Makefile
+index 4ac366bd9..5e93f3413 100644
+--- a/drivers/input/keyboard/mediatek/Makefile
++++ b/drivers/input/keyboard/mediatek/Makefile
+@@ -18,7 +18,7 @@ MTK_KPD_PLATFORM:=mt6781
+ else
+ MTK_KPD_PLATFORM:=$(CONFIG_MTK_PLATFORM)
+ endif
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_KPD_PLATFORM)/include/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_KPD_PLATFORM)/include/
+ subdir-ccflags-y += -I$(srctree)/drivers/input/keyboard/mediatek/$(MTK_KPD_PLATFORM)/
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/
+ obj-$(CONFIG_KEYBOARD_MTK) := kpd.o
+diff --git a/drivers/input/keyboard/mediatek/mt6765/Makefile b/drivers/input/keyboard/mediatek/mt6765/Makefile
+index 03f35ef8c..935e03954 100644
+--- a/drivers/input/keyboard/mediatek/mt6765/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6765/Makefile
+@@ -1,3 +1,3 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ obj-$(CONFIG_KEYBOARD_MTK) := hal_kpd.o
+diff --git a/drivers/input/keyboard/mediatek/mt6768/Makefile b/drivers/input/keyboard/mediatek/mt6768/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6768/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6768/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6781/Makefile b/drivers/input/keyboard/mediatek/mt6781/Makefile
+index 03f35ef8c..935e03954 100644
+--- a/drivers/input/keyboard/mediatek/mt6781/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6781/Makefile
+@@ -1,3 +1,3 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ obj-$(CONFIG_KEYBOARD_MTK) := hal_kpd.o
+diff --git a/drivers/input/keyboard/mediatek/mt6785/Makefile b/drivers/input/keyboard/mediatek/mt6785/Makefile
+index 03f35ef8c..935e03954 100644
+--- a/drivers/input/keyboard/mediatek/mt6785/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6785/Makefile
+@@ -1,3 +1,3 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ obj-$(CONFIG_KEYBOARD_MTK) := hal_kpd.o
+diff --git a/drivers/input/keyboard/mediatek/mt6833/Makefile b/drivers/input/keyboard/mediatek/mt6833/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6833/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6833/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6853/Makefile b/drivers/input/keyboard/mediatek/mt6853/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6853/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6853/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6873/Makefile b/drivers/input/keyboard/mediatek/mt6873/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6873/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6873/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6877/Makefile b/drivers/input/keyboard/mediatek/mt6877/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6877/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6877/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6885/Makefile b/drivers/input/keyboard/mediatek/mt6885/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6885/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6885/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/keyboard/mediatek/mt6893/Makefile b/drivers/input/keyboard/mediatek/mt6893/Makefile
+index baced291b..d9b6b15d8 100644
+--- a/drivers/input/keyboard/mediatek/mt6893/Makefile
++++ b/drivers/input/keyboard/mediatek/mt6893/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/input/keyboard/mediatek/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/input/keyboard/mediatek/
+ 
+ ifeq ($(CONFIG_MT_SND_SOC_NEW_ARCH),y)
+ 	EXTRA_CFLAGS += -I$(srctree)/sound/soc/mediatek/common/
+diff --git a/drivers/input/touchscreen/mediatek/Makefile b/drivers/input/touchscreen/mediatek/Makefile
+index 6ab349185..e081341d9 100644
+--- a/drivers/input/touchscreen/mediatek/Makefile
++++ b/drivers/input/touchscreen/mediatek/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+ ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+diff --git a/drivers/input/touchscreen/mediatek/gslX680/Makefile b/drivers/input/touchscreen/mediatek/gslX680/Makefile
+index e4b6aad15..4e0e4a554 100644
+--- a/drivers/input/touchscreen/mediatek/gslX680/Makefile
++++ b/drivers/input/touchscreen/mediatek/gslX680/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/
+ ccflags-y += -I$(srctree)/drivers/input/touchscreen/mediatek
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+diff --git a/drivers/media/platform/mtk-vcodec/Makefile b/drivers/media/platform/mtk-vcodec/Makefile
+index 0112f1cde..1760dd07e 100644
+--- a/drivers/media/platform/mtk-vcodec/Makefile
++++ b/drivers/media/platform/mtk-vcodec/Makefile
+@@ -53,7 +53,7 @@ endif
+ mtk-vcodec-common-y := $(MTK_PLATFORM)/mtk_vcodec_intr.o \
+ 		mtk_vcodec_util.o\
+ 
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ ifdef CONFIG_VIDEO_MEDIATEK_VCU
+ 	ccflags-y += -I$(srctree)/drivers/media/platform/mtk-vcu
+ endif
+diff --git a/drivers/media/platform/mtk-vcu/Makefile b/drivers/media/platform/mtk-vcu/Makefile
+index c00b28035..fb6c0f131 100644
+--- a/drivers/media/platform/mtk-vcu/Makefile
++++ b/drivers/media/platform/mtk-vcu/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/smi
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/cmdq
+ mtk-vcu-y += mtk_vcu.o \
+diff --git a/drivers/media/platform/mtk-videobuf/Makefile b/drivers/media/platform/mtk-videobuf/Makefile
+index 1172aef48..7c7869593 100644
+--- a/drivers/media/platform/mtk-videobuf/Makefile
++++ b/drivers/media/platform/mtk-videobuf/Makefile
+@@ -1,2 +1,2 @@
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ obj-y += mtk-dma-contig.o
+diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
+index 117d4f001..2799784e5 100644
+--- a/drivers/mfd/Makefile
++++ b/drivers/mfd/Makefile
+@@ -2,7 +2,7 @@
+ #
+ # Makefile for multifunction miscellaneous devices
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+ 
+ 88pm860x-objs			:= 88pm860x-core.o 88pm860x-i2c.o
+ obj-$(CONFIG_MFD_88PM860X)	+= 88pm860x.o
+diff --git a/drivers/misc/cxl/Makefile b/drivers/misc/cxl/Makefile
+index 502d41fc9..719ae5e04 100644
+--- a/drivers/misc/cxl/Makefile
++++ b/drivers/misc/cxl/Makefile
+@@ -1,6 +1,6 @@
+ # SPDX-License-Identifier: GPL-2.0
+ ccflags-y			:= $(call cc-disable-warning, unused-const-variable)
+-ccflags-$(CONFIG_PPC_WERROR)	+= -Werror
++ccflags-$(CONFIG_PPC_WERROR)	+= -Wno-error
+ 
+ cxl-y				+= main.o file.o irq.o fault.o native.o
+ cxl-y				+= context.o sysfs.o pci.o trace.o
+diff --git a/drivers/misc/mediatek/Makefile b/drivers/misc/mediatek/Makefile
+index c0a54e6af..1a7882b24 100755
+--- a/drivers/misc/mediatek/Makefile
++++ b/drivers/misc/mediatek/Makefile
+@@ -14,7 +14,7 @@
+ #$(call all-subdir-src-or-makefile)
+ export MTK_PLATFORM_NAME := $(CONFIG_MTK_PLATFORM)
+ export MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ 
+ ifeq ($(CONFIG_MTK_PLATFORM), "mt6853")
+ subdir-ccflags-y += -DOPLUS_FEATURE_CAMERA_OIS
+diff --git a/drivers/misc/mediatek/accdet/Makefile b/drivers/misc/mediatek/accdet/Makefile
+index 15fb3fdf2..8957d47b0 100644
+--- a/drivers/misc/mediatek/accdet/Makefile
++++ b/drivers/misc/mediatek/accdet/Makefile
+@@ -1,7 +1,7 @@
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-$(CONFIG_MACH_MT8167)+= -Werror -I$(srctree)/drivers/misc/mediatek/accdet/$(MTK_PLATFORM)
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-$(CONFIG_MACH_MT8167)+= -Wno-error -I$(srctree)/drivers/misc/mediatek/accdet/$(MTK_PLATFORM)
+ 
+-#subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/$(MTK_PLATFORM)
++#subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/accdet/$(MTK_PLATFORM)
+ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6391)+= -I$(srctree)/drivers/misc/mediatek/accdet/mt6391
+ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6355)+= -I$(srctree)/drivers/misc/mediatek/accdet/mt6355
+ subdir-ccflags-$(CONFIG_MTK_PMIC_CHIP_MT6357)+= -I$(srctree)/drivers/misc/mediatek/accdet/mt6357
+diff --git a/drivers/misc/mediatek/chip/Makefile b/drivers/misc/mediatek/chip/Makefile
+index 6466805c6..981ea0d8c 100644
+--- a/drivers/misc/mediatek/chip/Makefile
++++ b/drivers/misc/mediatek/chip/Makefile
+@@ -11,7 +11,7 @@
+ # GNU General Public License for more details.
+ #
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/chip/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/chip/
+ 
+ obj-$(CONFIG_MTK_CHIP) += CHIP_COMMON.o
+ CHIP_COMMON-$(CONFIG_MTK_CHIP) := mtk_chip_common.o
+diff --git a/drivers/misc/mediatek/connectivity/Makefile b/drivers/misc/mediatek/connectivity/Makefile
+index bac3ce561..eb0012568 100644
+--- a/drivers/misc/mediatek/connectivity/Makefile
++++ b/drivers/misc/mediatek/connectivity/Makefile
+@@ -19,13 +19,13 @@ ifneq ($(KERNELRELEASE),)
+     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1
+     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/clkbuf_v1/$(MTK_PLATFORM)
+-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++    subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++    subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ ifeq ($(CONFIG_MTK_PMIC_CHIP_MT6359),y)
+-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
++    subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include/mt6359
+ endif
+ ifeq ($(CONFIG_MTK_PMIC_NEW_ARCH),y)
+-    subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++    subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ endif
+     subdir-ccflags-y += -I$(srctree)/drivers/mmc/core
+     subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/eccci/$(MTK_PLATFORM)
+diff --git a/drivers/misc/mediatek/geniezone/mtee-kree/Makefile b/drivers/misc/mediatek/geniezone/mtee-kree/Makefile
+index b09cc40ed..2a576e6cc 100644
+--- a/drivers/misc/mediatek/geniezone/mtee-kree/Makefile
++++ b/drivers/misc/mediatek/geniezone/mtee-kree/Makefile
+@@ -2,10 +2,10 @@
+ # Makefile for mtee kree components
+ #
+ 
+-#subdir-ccflags-y += -Werror
++#subdir-ccflags-y += -Wno-error
+ $(info ************  drivers/trusty/mtee-kree mk ************)
+ 
+-ccflags-y := -I$(srctree)/drivers/misc/mediatek/geniezone/public -Werror $(ccflags-y)
++ccflags-y := -I$(srctree)/drivers/misc/mediatek/geniezone/public -Wno-error $(ccflags-y)
+ 
+ ifneq ($(CONFIG_MACH_MT6758), y)
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/ppm_v3/src/mach/$(CONFIG_MTK_PLATFORM)
+diff --git a/drivers/misc/mediatek/gpu/gpu_rgx/m1.11ED5425693/services/server/env/linux/Kbuild.mk b/drivers/misc/mediatek/gpu/gpu_rgx/m1.11ED5425693/services/server/env/linux/Kbuild.mk
+index c8167ed57..bd3371f93 100644
+--- a/drivers/misc/mediatek/gpu/gpu_rgx/m1.11ED5425693/services/server/env/linux/Kbuild.mk
++++ b/drivers/misc/mediatek/gpu/gpu_rgx/m1.11ED5425693/services/server/env/linux/Kbuild.mk
+@@ -470,10 +470,10 @@ $(PVRSRV_MODNAME)-y += \
+ $(PVRSRV_MODNAME)-y += \
+  generated/synctracking_bridge/client_synctracking_direct_bridge.o
+ 
+-# Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
++# Enable -Wno-error for all built object files (suppress for Fiasco.OC/L4Linux)
+ ifeq ($(CONFIG_L4),)
+ ifneq ($(W),1)
+-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
++$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Wno-error))
+ endif
+ endif
+ 
+diff --git a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5696267/services/server/env/linux/Kbuild.mk b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5696267/services/server/env/linux/Kbuild.mk
+index d94e58bae..84cdd0f2e 100644
+--- a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5696267/services/server/env/linux/Kbuild.mk
++++ b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5696267/services/server/env/linux/Kbuild.mk
+@@ -508,10 +508,10 @@ $(PVRSRV_MODNAME)-y += \
+ $(PVRSRV_MODNAME)-y += \
+  generated/$(PVR_ARCH)/synctracking_bridge/client_synctracking_direct_bridge.o
+ 
+-# Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
++# Enable -Wno-error for all built object files (suppress for Fiasco.OC/L4Linux)
+ ifeq ($(CONFIG_L4),)
+ ifneq ($(W),1)
+-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
++$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Wno-error))
+ endif
+ endif
+ 
+diff --git a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5720833/services/server/env/linux/Kbuild.mk b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5720833/services/server/env/linux/Kbuild.mk
+index d94e58bae..84cdd0f2e 100644
+--- a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5720833/services/server/env/linux/Kbuild.mk
++++ b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5720833/services/server/env/linux/Kbuild.mk
+@@ -508,10 +508,10 @@ $(PVRSRV_MODNAME)-y += \
+ $(PVRSRV_MODNAME)-y += \
+  generated/$(PVR_ARCH)/synctracking_bridge/client_synctracking_direct_bridge.o
+ 
+-# Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
++# Enable -Wno-error for all built object files (suppress for Fiasco.OC/L4Linux)
+ ifeq ($(CONFIG_L4),)
+ ifneq ($(W),1)
+-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
++$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Wno-error))
+ endif
+ endif
+ 
+diff --git a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5776728/services/server/env/linux/Kbuild.mk b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5776728/services/server/env/linux/Kbuild.mk
+index 570e875fa..9e704cb69 100644
+--- a/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5776728/services/server/env/linux/Kbuild.mk
++++ b/drivers/misc/mediatek/gpu/gpu_rgx/m1.13ED5776728/services/server/env/linux/Kbuild.mk
+@@ -513,10 +513,10 @@ $(PVRSRV_MODNAME)-y += \
+ $(PVRSRV_MODNAME)-y += \
+  generated/$(PVR_ARCH)/synctracking_bridge/client_synctracking_direct_bridge.o
+ 
+-# Enable -Werror for all built object files (suppress for Fiasco.OC/L4Linux)
++# Enable -Wno-error for all built object files (suppress for Fiasco.OC/L4Linux)
+ ifeq ($(CONFIG_L4),)
+ ifneq ($(W),1)
+-$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Werror))
++$(foreach _o,$(addprefix CFLAGS_,$(notdir $($(PVRSRV_MODNAME)-y))),$(eval $(_o) := -Wno-error))
+ endif
+ endif
+ 
+diff --git a/drivers/misc/mediatek/imgsensor/src/common/v1_1/imgsensor_hw.c b/drivers/misc/mediatek/imgsensor/src/common/v1_1/imgsensor_hw.c
+index 3c41b5c34..40a8a88fe 100755
+--- a/drivers/misc/mediatek/imgsensor/src/common/v1_1/imgsensor_hw.c
++++ b/drivers/misc/mediatek/imgsensor/src/common/v1_1/imgsensor_hw.c
+@@ -38,6 +38,16 @@ char * const imgsensor_hw_pin_names[] = {
+ #endif
+ 	"vcamd",
+ 	"vcamio",
++#ifdef OPLUS_FEATURE_CAMERA_COMMON
++	"afvdd",
++	"avdd_1",
++	"dvdd_1",
++	"vois",
++	"avdd1",
++	"fan53870_enable",
++	"gpio_power_enable",
++#endif
++
+ #ifdef MIPI_SWITCH
+ 	"mipi_switch_en",
+ 	"mipi_switch_sel",
+diff --git a/drivers/misc/mediatek/imgsensor/src/common/v1_1/n3d_fsync/frame-sync/fs-ut-test/Makefile b/drivers/misc/mediatek/imgsensor/src/common/v1_1/n3d_fsync/frame-sync/fs-ut-test/Makefile
+index ffc73ba50..b07c7b7e1 100644
+--- a/drivers/misc/mediatek/imgsensor/src/common/v1_1/n3d_fsync/frame-sync/fs-ut-test/Makefile
++++ b/drivers/misc/mediatek/imgsensor/src/common/v1_1/n3d_fsync/frame-sync/fs-ut-test/Makefile
+@@ -2,7 +2,7 @@
+ # Copyright (C) 2020 MediaTek Inc.
+ 
+ # CROSS_COMPILE = aarch64-linux-gnu-
+-CFLAGS = -DFS_UT -Werror -Wall -Wframe-larger-than=512 --static
++CFLAGS = -DFS_UT -Wno-error -Wall -Wframe-larger-than=512 --static
+ LDFLAGS = --static
+ 
+ INCS = -I ../ \
+diff --git a/drivers/misc/mediatek/lcm/oppo20730_samsung_ams643xy04_dsi_cmd/Makefile b/drivers/misc/mediatek/lcm/oppo20730_samsung_ams643xy04_dsi_cmd/Makefile
+index 5d620e181..a0057c715 100755
+--- a/drivers/misc/mediatek/lcm/oppo20730_samsung_ams643xy04_dsi_cmd/Makefile
++++ b/drivers/misc/mediatek/lcm/oppo20730_samsung_ams643xy04_dsi_cmd/Makefile
+@@ -2,7 +2,7 @@
+ # Makefile for misc devices that really don't fit anywhere else.
+ #
+ #include $(srctree)/drivers/misc/mediatek/Makefile.custom
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ obj-y += oppo20730_samsung_ams643xy04_1080p_dsi_vdo.o
+ 
+ ccflags-$(CONFIG_MTK_LCM) += -I$(srctree)/drivers/misc/mediatek/lcm/inc
+diff --git a/drivers/misc/mediatek/mtee/Makefile b/drivers/misc/mediatek/mtee/Makefile
+index f807a3fd1..b1ee82669 100644
+--- a/drivers/misc/mediatek/mtee/Makefile
++++ b/drivers/misc/mediatek/mtee/Makefile
+@@ -19,7 +19,7 @@
+ # inconsistent state and crashed.
+ KCOV_INSTRUMENT_tz_system.o := n
+ 
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/trustzone
+ 
+ obj-y += tz_module.o
+diff --git a/drivers/misc/mediatek/pmic/mt6357/v1/Makefile b/drivers/misc/mediatek/pmic/mt6357/v1/Makefile
+index a8df6fd2f..aed97ae34 100644
+--- a/drivers/misc/mediatek/pmic/mt6357/v1/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6357/v1/Makefile
+@@ -12,7 +12,7 @@ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+diff --git a/drivers/misc/mediatek/pmic/mt6358/v1/Makefile b/drivers/misc/mediatek/pmic/mt6358/v1/Makefile
+index 915175a3e..20e9f5a8b 100644
+--- a/drivers/misc/mediatek/pmic/mt6358/v1/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6358/v1/Makefile
+@@ -6,7 +6,7 @@ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ ifeq ($(CONFIG_MACH_MT6781),y)
+diff --git a/drivers/misc/mediatek/pmic/mt6359/v1/Makefile b/drivers/misc/mediatek/pmic/mt6359/v1/Makefile
+index e05c4b464..a4568b41d 100644
+--- a/drivers/misc/mediatek/pmic/mt6359/v1/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6359/v1/Makefile
+@@ -6,7 +6,7 @@ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+diff --git a/drivers/misc/mediatek/pmic/mt6359p/v1/Makefile b/drivers/misc/mediatek/pmic/mt6359p/v1/Makefile
+index 91634faff..2b114c661 100644
+--- a/drivers/misc/mediatek/pmic/mt6359p/v1/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6359p/v1/Makefile
+@@ -12,7 +12,7 @@ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/subpmic
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/v2
+diff --git a/drivers/misc/mediatek/pmic/mt6370/Makefile b/drivers/misc/mediatek/pmic/mt6370/Makefile
+index 5494e0de6..80df837b5 100644
+--- a/drivers/misc/mediatek/pmic/mt6370/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6370/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Wall -Werror
++subdir-ccflags-y += -Wall -Wno-error
+ ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+ subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+diff --git a/drivers/misc/mediatek/pmic/mt6390/v1/Makefile b/drivers/misc/mediatek/pmic/mt6390/v1/Makefile
+index 08213ec53..bedc3c397 100644
+--- a/drivers/misc/mediatek/pmic/mt6390/v1/Makefile
++++ b/drivers/misc/mediatek/pmic/mt6390/v1/Makefile
+@@ -12,7 +12,7 @@ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/misc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifeq ($(CONFIG_MTK_TINYSYS_SSPM_SUPPORT), y)
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/sspm/
+diff --git a/drivers/misc/mediatek/power/Makefile b/drivers/misc/mediatek/power/Makefile
+index b3a5c286a..b82342ac7 100644
+--- a/drivers/misc/mediatek/power/Makefile
++++ b/drivers/misc/mediatek/power/Makefile
+@@ -14,17 +14,17 @@ subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/battery
+ subdir-ccflags-y += -I$(srctree)/drivers/power/supply/mediatek/charger
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/misc
+ 
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6765/Makefile b/drivers/misc/mediatek/power/mt6765/Makefile
+index 1b00df295..3be685286 100644
+--- a/drivers/misc/mediatek/power/mt6765/Makefile
++++ b/drivers/misc/mediatek/power/mt6765/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6768/Makefile b/drivers/misc/mediatek/power/mt6768/Makefile
+index 65c661eed..dad451a5c 100644
+--- a/drivers/misc/mediatek/power/mt6768/Makefile
++++ b/drivers/misc/mediatek/power/mt6768/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6781/Makefile b/drivers/misc/mediatek/power/mt6781/Makefile
+index 1b00df295..3be685286 100644
+--- a/drivers/misc/mediatek/power/mt6781/Makefile
++++ b/drivers/misc/mediatek/power/mt6781/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6785/Makefile b/drivers/misc/mediatek/power/mt6785/Makefile
+index 1b00df295..3be685286 100644
+--- a/drivers/misc/mediatek/power/mt6785/Makefile
++++ b/drivers/misc/mediatek/power/mt6785/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6833/Makefile b/drivers/misc/mediatek/power/mt6833/Makefile
+index 1b00df295..3be685286 100644
+--- a/drivers/misc/mediatek/power/mt6833/Makefile
++++ b/drivers/misc/mediatek/power/mt6833/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6853/Makefile b/drivers/misc/mediatek/power/mt6853/Makefile
+index f51e4540e..f776abbe8 100644
+--- a/drivers/misc/mediatek/power/mt6853/Makefile
++++ b/drivers/misc/mediatek/power/mt6853/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6873/Makefile b/drivers/misc/mediatek/power/mt6873/Makefile
+index eaf2d3603..1ef079943 100644
+--- a/drivers/misc/mediatek/power/mt6873/Makefile
++++ b/drivers/misc/mediatek/power/mt6873/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/power/mt6885/Makefile b/drivers/misc/mediatek/power/mt6885/Makefile
+index a3f3f0cd4..1269b75b4 100644
+--- a/drivers/misc/mediatek/power/mt6885/Makefile
++++ b/drivers/misc/mediatek/power/mt6885/Makefile
+@@ -10,13 +10,13 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/charger
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/charger
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/flashlight/inc
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/spm_v2/
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/usb_c/tcpc/inc
+-subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Werror -I$(srctree)/drivers/misc/mediatek/mu3d/drv
++subdir-ccflags-$(CONFIG_USB_MU3D_DRV) += -Wno-error -I$(srctree)/drivers/misc/mediatek/mu3d/drv
+ subdir-ccflags-$(CONFIG_USB_MTK_HDRC) += -I$(srctree)/drivers/misc/mediatek/usb20/
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/u3_switch
+ subdir-ccflags-$(CONFIG_USB_C_SWITCH_U3_MUX) += -I$(srctree)/drivers/misc/mediatek/usb_c/inc
+diff --git a/drivers/misc/mediatek/ram_console/mtk_ram_console.c b/drivers/misc/mediatek/ram_console/mtk_ram_console.c
+index a68cc3c1c..d4c04087d 100644
+--- a/drivers/misc/mediatek/ram_console/mtk_ram_console.c
++++ b/drivers/misc/mediatek/ram_console/mtk_ram_console.c
+@@ -808,7 +808,7 @@ static int __init ram_console_early_init(void)
+ 		 * to avoid build error as below for aarch64 case
+ 		 * (error: cast to 'struct ram_console_buffer *' from
+ 		 * smaller integer type 'unsigned int'
+-		 * [-Werror,-Wint-to-pointer-cast])
++		 * [-Wno-error,-Wint-to-pointer-cast])
+ 		 */
+ 		ram_console_buffer_pa =
+ 			(struct ram_console_buffer *)(unsigned long)start;
+diff --git a/drivers/misc/mediatek/rt-regmap/Makefile b/drivers/misc/mediatek/rt-regmap/Makefile
+index cf347630a..524aefe7e 100644
+--- a/drivers/misc/mediatek/rt-regmap/Makefile
++++ b/drivers/misc/mediatek/rt-regmap/Makefile
+@@ -1,2 +1,2 @@
+-subdir-ccflags-y += -Wall -Werror
++subdir-ccflags-y += -Wall -Wno-error
+ obj-$(CONFIG_RT_REGMAP) += rt-regmap.o
+diff --git a/drivers/misc/mediatek/teei/400/tz_dcih/Makefile b/drivers/misc/mediatek/teei/400/tz_dcih/Makefile
+index 53f906632..6395d3ae4 100644
+--- a/drivers/misc/mediatek/teei/400/tz_dcih/Makefile
++++ b/drivers/misc/mediatek/teei/400/tz_dcih/Makefile
+@@ -12,4 +12,4 @@
+ 
+ obj-$(CONFIG_MICROTRUST_VFS_DRIVER) += tz_dcih.o
+ obj-$(CONFIG_MICROTRUST_VFS_DRIVER) += tz_dcih_test.o
+-ccflags-y += -D DEBUG_DO -fno-pic -Werror
++ccflags-y += -D DEBUG_DO -fno-pic -Wno-error
+diff --git a/drivers/misc/mediatek/teei/400/ut_tester/Makefile b/drivers/misc/mediatek/teei/400/ut_tester/Makefile
+index f38b19596..2c62275a1 100644
+--- a/drivers/misc/mediatek/teei/400/ut_tester/Makefile
++++ b/drivers/misc/mediatek/teei/400/ut_tester/Makefile
+@@ -11,4 +11,4 @@
+ # GNU General Public License for more details.
+ 
+ obj-y += ut_tester.o
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+diff --git a/drivers/misc/mediatek/tkcore/core/Makefile b/drivers/misc/mediatek/tkcore/core/Makefile
+index b18cd5d9b..68faf20ed 100644
+--- a/drivers/misc/mediatek/tkcore/core/Makefile
++++ b/drivers/misc/mediatek/tkcore/core/Makefile
+@@ -18,7 +18,7 @@ endif
+ 
+ M ?=$(srctree)/drivers/misc/mediatek/tkcore
+ 
+-#ccflags-y+=-Werror
++#ccflags-y+=-Wno-error
+ ccflags-y += -I$(M)/include/linux
+ ccflags-y += -I$(M)/include
+ ccflags-y += -I$(M)
+diff --git a/drivers/misc/mediatek/trusted_mem/Makefile b/drivers/misc/mediatek/trusted_mem/Makefile
+index 2c79e15af..ca4050101 100644
+--- a/drivers/misc/mediatek/trusted_mem/Makefile
++++ b/drivers/misc/mediatek/trusted_mem/Makefile
+@@ -13,7 +13,7 @@
+ include $(srctree)/drivers/misc/mediatek/trusted_mem/Makefile.configs
+ 
+ # Force strictly compiler check
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+ 
+ #==========================================================================
+ # Trusted Memory Subsystem Driver
+diff --git a/drivers/misc/mediatek/typec/tcpc/Makefile b/drivers/misc/mediatek/typec/tcpc/Makefile
+index 96b3b386d..e4dfb43a9 100644
+--- a/drivers/misc/mediatek/typec/tcpc/Makefile
++++ b/drivers/misc/mediatek/typec/tcpc/Makefile
+@@ -1,4 +1,4 @@
+-subdir-ccflags-y += -Wall -Werror
++subdir-ccflags-y += -Wall -Wno-error
+ obj-$(CONFIG_TCPC_MT6360)		+= tcpc_mt6360.o
+ obj-$(CONFIG_TCPC_MT6362)		+= tcpc_mt6362.o
+ obj-$(CONFIG_TCPC_MT6370)		+= tcpc_mt6370.o
+diff --git a/drivers/power/supply/mediatek/Makefile b/drivers/power/supply/mediatek/Makefile
+index ea45a8bb9..e0726f28a 100644
+--- a/drivers/power/supply/mediatek/Makefile
++++ b/drivers/power/supply/mediatek/Makefile
+@@ -13,10 +13,10 @@
+ 
+ 
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ ifneq ($(CONFIG_FPGA_EARLY_PORTING),y)
+ ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+diff --git a/drivers/power/supply/mediatek/battery/Makefile b/drivers/power/supply/mediatek/battery/Makefile
+index 17b8eb22c..543a60f9a 100755
+--- a/drivers/power/supply/mediatek/battery/Makefile
++++ b/drivers/power/supply/mediatek/battery/Makefile
+@@ -13,26 +13,26 @@
+ 
+ 
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/misc
+ 
+ ifeq ($(CONFIG_OPLUS_CHARGER_MTK6785),y)
+ 	obj-y += mtk_battery.o mtk_power_misc.o mtk_gauge_coulomb_service.o mtk_gauge_class.o mtk_battery_recovery.o mtk_battery_core.o
+ else ifeq ($(CONFIG_OPLUS_CHARGER_MTK6769),y)
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/misc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
+ 	obj-y += oplus_mtk_battery.o mtk_power_misc.o mtk_gauge_coulomb_service.o mtk_gauge_class.o mtk_battery_recovery.o mtk_battery_core.o
+ else ifeq ($(CONFIG_OPLUS_CHARGER_MTK6768),y)
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/misc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
+         obj-y += oplus_mtk_battery.o mtk_power_misc.o mtk_gauge_coulomb_service.o mtk_gauge_class.o mtk_battery_recovery.o mtk_battery_core.o
+ else ifeq ($(CONFIG_OPLUS_CHARGER_MTK6769R),y)
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/power/supply/mediatek/misc
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/power/supply/mediatek/misc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/typec/tcpc/inc/
+         obj-y += oplus_mtk_battery.o mtk_power_misc.o mtk_gauge_coulomb_service.o mtk_gauge_class.o mtk_battery_recovery.o mtk_battery_core.o
+ else ifeq ($(CONFIG_MTK_GAUGE_VERSION),30)
+ ifeq ($(CONFIG_OPLUS_CHARGER_MTK6771),y)
+diff --git a/drivers/power/supply/mediatek/charger/Makefile b/drivers/power/supply/mediatek/charger/Makefile
+index e946feb63..31a177f49 100755
+--- a/drivers/power/supply/mediatek/charger/Makefile
++++ b/drivers/power/supply/mediatek/charger/Makefile
+@@ -12,7 +12,7 @@
+ #
+ 
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include
+diff --git a/drivers/power/supply/mediatek/misc/Makefile b/drivers/power/supply/mediatek/misc/Makefile
+index ef1cb5013..1e42b0e2b 100644
+--- a/drivers/power/supply/mediatek/misc/Makefile
++++ b/drivers/power/supply/mediatek/misc/Makefile
+@@ -13,10 +13,10 @@
+ 
+ 
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/pmic/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/pmic/include
+ 
+ 
+ obj-y += mtk_gauge_time_service.o
+diff --git a/drivers/scsi/aic7xxx/Makefile b/drivers/scsi/aic7xxx/Makefile
+index c15be2590..55add4e3e 100644
+--- a/drivers/scsi/aic7xxx/Makefile
++++ b/drivers/scsi/aic7xxx/Makefile
+@@ -36,7 +36,7 @@ aic79xx-y					+= aic79xx_osm.o	\
+ 
+ ccflags-y += -Idrivers/scsi
+ ifdef WARNINGS_BECOME_ERRORS
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+ endif
+ 
+ # Files generated that shall be removed upon make clean
+diff --git a/drivers/scsi/lpfc/Makefile b/drivers/scsi/lpfc/Makefile
+index cb6aa802c..1229078ba 100644
+--- a/drivers/scsi/lpfc/Makefile
++++ b/drivers/scsi/lpfc/Makefile
+@@ -25,7 +25,7 @@ ccflags-$(GCOV) := -fprofile-arcs -ftest-coverage
+ ccflags-$(GCOV) += -O0
+ 
+ ifdef WARNINGS_BECOME_ERRORS
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+ endif
+ 
+ obj-$(CONFIG_SCSI_LPFC) := lpfc.o
+diff --git a/drivers/staging/fsl-mc/bus/dpio/Makefile b/drivers/staging/fsl-mc/bus/dpio/Makefile
+index 837d3303e..bef864d3e 100644
+--- a/drivers/staging/fsl-mc/bus/dpio/Makefile
++++ b/drivers/staging/fsl-mc/bus/dpio/Makefile
+@@ -2,7 +2,7 @@
+ # QorIQ DPAA2 DPIO driver
+ #
+ 
+-subdir-ccflags-y := -Werror
++subdir-ccflags-y := -Wno-error
+ 
+ obj-$(CONFIG_FSL_MC_DPIO) += fsl-mc-dpio.o
+ 
+diff --git a/drivers/usb/mtu3/mt6785/Makefile b/drivers/usb/mtu3/mt6785/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6785/Makefile
++++ b/drivers/usb/mtu3/mt6785/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/usb/mtu3/mt6833/Makefile b/drivers/usb/mtu3/mt6833/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6833/Makefile
++++ b/drivers/usb/mtu3/mt6833/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/usb/mtu3/mt6853/Makefile b/drivers/usb/mtu3/mt6853/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6853/Makefile
++++ b/drivers/usb/mtu3/mt6853/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/usb/mtu3/mt6873/Makefile b/drivers/usb/mtu3/mt6873/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6873/Makefile
++++ b/drivers/usb/mtu3/mt6873/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/usb/mtu3/mt6877/Makefile b/drivers/usb/mtu3/mt6877/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6877/Makefile
++++ b/drivers/usb/mtu3/mt6877/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/usb/mtu3/mt6885/Makefile b/drivers/usb/mtu3/mt6885/Makefile
+index 8839ae712..efb7f4487 100644
+--- a/drivers/usb/mtu3/mt6885/Makefile
++++ b/drivers/usb/mtu3/mt6885/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/usb/mtu3
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/usb/mtu3
+ subdir-ccflags-y += -I$(srctree)/drivers/misc/mediatek/base/power/include/
+ 
+ obj-y += mtu3_hal.o mtu3_phy_hal.o mtu3_sleep.o mtu3_phy_debugfs.o
+diff --git a/drivers/watchdog/mediatek/Makefile b/drivers/watchdog/mediatek/Makefile
+index 090796c7a..f3465f604 100644
+--- a/drivers/watchdog/mediatek/Makefile
++++ b/drivers/watchdog/mediatek/Makefile
+@@ -13,9 +13,9 @@
+ 
+ #$(call all-subdir-src-or-makefile)
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
+ 
+ obj-$(CONFIG_MTK_WATCHDOG)		+= wdk/
+ 
+diff --git a/drivers/watchdog/mediatek/wdk/Makefile b/drivers/watchdog/mediatek/wdk/Makefile
+index 95ae28550..7a6945459 100644
+--- a/drivers/watchdog/mediatek/wdk/Makefile
++++ b/drivers/watchdog/mediatek/wdk/Makefile
+@@ -13,7 +13,7 @@
+ 
+ ccflags-y += -I$(srctree)/drivers/watchdog/mediatek/include
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/masp/asfv2/asf_inc
+ 
+ obj-$(CONFIG_MTK_WD_KICKER) += wd_common_drv.o
+ obj-y += wd_api.o
+diff --git a/include/linux/blk-crypto.h b/include/linux/blk-crypto.h
+index 43d0dbbeb..33e11d73e 100644
+--- a/include/linux/blk-crypto.h
++++ b/include/linux/blk-crypto.h
+@@ -32,7 +32,7 @@ int blk_crypto_start_using_mode(enum blk_crypto_mode_num crypto_mode,
+ int blk_crypto_evict_key(struct request_queue *q,
+ 			 const struct blk_crypto_key *key);
+ 
+-inline void blk_crypto_flock(struct keyslot_manager *ksm, unsigned int flags);
++void blk_crypto_flock(struct keyslot_manager *ksm, unsigned int flags);
+ 
+ 
+ #else /* CONFIG_BLK_INLINE_ENCRYPTION */
+diff --git a/include/linux/cfi.h b/include/linux/cfi.h
+index e27033d5d..f641a3905 100644
+--- a/include/linux/cfi.h
++++ b/include/linux/cfi.h
+@@ -3,6 +3,15 @@
+ 
+ #include <linux/stringify.h>
+ 
++/* OPERIT: typedef kept available without CFI so that
++ * struct module keeps the same layout (and module_layout CRC) as a
++ * clang-CFI build - required by MTK's prebuilt modules. */
++#ifndef CONFIG_CFI_CLANG
++#ifdef CONFIG_MODULES
++typedef void (*cfi_check_fn)(uint64_t, void *, void *);
++#endif
++#endif
++
+ #ifdef CONFIG_CFI_CLANG
+ #ifdef CONFIG_MODULES
+ 
+diff --git a/include/linux/keyslot-manager.h b/include/linux/keyslot-manager.h
+index e247be8a5..631d8e311 100644
+--- a/include/linux/keyslot-manager.h
++++ b/include/linux/keyslot-manager.h
+@@ -98,7 +98,7 @@ int keyslot_manager_derive_raw_secret(struct keyslot_manager *ksm,
+ 				      unsigned int wrapped_key_size,
+ 				      u8 *secret, unsigned int secret_size);
+ 
+-inline void ksm_flock(struct keyslot_manager *ksm, unsigned int flags);
++void ksm_flock(struct keyslot_manager *ksm, unsigned int flags);
+ 
+ #endif /* CONFIG_BLK_INLINE_ENCRYPTION */
+ 
+diff --git a/include/linux/module.h b/include/linux/module.h
+index f3fbbdcd9..7464b7d7c 100644
+--- a/include/linux/module.h
++++ b/include/linux/module.h
+@@ -347,9 +347,11 @@ struct module {
+ 	const s32 *crcs;
+ 	unsigned int num_syms;
+ 
+-#ifdef CONFIG_CFI_CLANG
++	/* OPERIT: field kept unconditionally - matches the layout
++	 * and module_layout CRC of the clang-CFI kernel MTK's
++	 * prebuilt modules were built against. */
+ 	cfi_check_fn cfi_check;
+-#endif
++
+ 
+ 	/* Kernel parameters. */
+ #ifdef CONFIG_SYSFS
+diff --git a/include/linux/skbuff.h b/include/linux/skbuff.h
+index 8bb2a215b..e3b46709e 100644
+--- a/include/linux/skbuff.h
++++ b/include/linux/skbuff.h
+@@ -1754,7 +1754,7 @@ static inline void __skb_insert(struct sk_buff *newsk,
+ 	list->qlen++;
+ }
+ 
+-static inline void __attribute__((no_sanitize("object-size")))
++static inline void 
+ 	__skb_queue_splice(const struct sk_buff_head *list,
+ 				      struct sk_buff *prev,
+ 				      struct sk_buff *next)
+@@ -1853,7 +1853,7 @@ static inline void __skb_queue_after(struct sk_buff_head *list,
+ void skb_append(struct sk_buff *old, struct sk_buff *newsk,
+ 		struct sk_buff_head *list);
+ 
+-static inline void __attribute__((no_sanitize("object-size")))
++static inline void 
+ 	__skb_queue_before(struct sk_buff_head *list,
+ 				      struct sk_buff *next,
+ 				      struct sk_buff *newsk)
+diff --git a/include/net/route.h b/include/net/route.h
+index 239ffb618..8c052de74 100644
+--- a/include/net/route.h
++++ b/include/net/route.h
+@@ -231,7 +231,7 @@ void fib_del_ifaddr(struct in_ifaddr *, struct in_ifaddr *);
+ void rt_add_uncached_list(struct rtable *rt);
+ void rt_del_uncached_list(struct rtable *rt);
+ 
+-static inline void __attribute__((no_sanitize("null"))) ip_rt_put(struct rtable *rt)
++static inline void  ip_rt_put(struct rtable *rt)
+ {
+ 	/* dst_release() accepts a NULL parameter.
+ 	 * We rely on dst being first structure in struct rtable
+diff --git a/include/net/sock.h b/include/net/sock.h
+index c85471a13..36412817f 100755
+--- a/include/net/sock.h
++++ b/include/net/sock.h
+@@ -1701,7 +1701,7 @@ static inline void sk_set_socket(struct sock *sk, struct socket *sock)
+ 	sk->sk_socket = sock;
+ }
+ 
+-static inline wait_queue_head_t __attribute__((no_sanitize("null")))
++static inline wait_queue_head_t 
+ 	*sk_sleep(struct sock *sk)
+ {
+ 	BUILD_BUG_ON(offsetof(struct socket_wq, wait) != 0);
+diff --git a/kernel/Makefile b/kernel/Makefile
+index e1c1a1282..504faad4b 100755
+--- a/kernel/Makefile
++++ b/kernel/Makefile
+@@ -158,3 +158,5 @@ $(obj)/kheaders_data.tar.xz: FORCE
+ 	$(call cmd,genikh)
+ 
+ clean-files := kheaders_data.tar.xz kheaders.md5
++
++obj-y += cfi_compat.o
+diff --git a/mm/Makefile b/mm/Makefile
+index 950a0f528..6eb80229e 100755
+--- a/mm/Makefile
++++ b/mm/Makefile
+@@ -3,7 +3,7 @@
+ # Makefile for the linux memory manager.
+ #
+ 
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ ccflags-y += -I$(srctree)/drivers/misc/mediatek/include
+ 
+ ifdef CONFIG_MTK_ION
+diff --git a/scripts/Makefile.kasan b/scripts/Makefile.kasan
+index 031b62f8c..23f862413 100644
+--- a/scripts/Makefile.kasan
++++ b/scripts/Makefile.kasan
+@@ -11,7 +11,7 @@ KASAN_SHADOW_OFFSET ?= $(CONFIG_KASAN_SHADOW_OFFSET)
+ 
+ CFLAGS_KASAN_MINIMAL := -fsanitize=kernel-address
+ 
+-ifeq ($(call cc-option, $(CFLAGS_KASAN_MINIMAL) -Werror),)
++ifeq ($(call cc-option, $(CFLAGS_KASAN_MINIMAL) -Wno-error),)
+     ifneq ($(CONFIG_COMPILE_TEST),y)
+         $(error Cannot use CONFIG_KASAN_GENERIC: \
+           -fsanitize=kernel-address is not supported by compiler)
+@@ -43,7 +43,7 @@ ifdef CONFIG_KASAN_SW_TAGS
+ 
+ CFLAGS_KASAN_MINIMAL := -fsanitize=kernel-hwaddress
+ 
+-ifeq ($(call cc-option, $(CFLAGS_KASAN_MINIMAL) -Werror),)
++ifeq ($(call cc-option, $(CFLAGS_KASAN_MINIMAL) -Wno-error),)
+     ifneq ($(CONFIG_COMPILE_TEST),y)
+         $(error Cannot use CONFIG_KASAN_SW_TAGS: \
+           -fsanitize=kernel-hwaddress is not supported by compiler)
+diff --git a/scripts/Makefile.kcov b/scripts/Makefile.kcov
+index 945724d22..8b62030f6 100644
+--- a/scripts/Makefile.kcov
++++ b/scripts/Makefile.kcov
+@@ -1,6 +1,6 @@
+ ifdef CONFIG_KCOV
+ 
+-ifeq ($(call cc-option, -fsanitize-coverage=trace-pc -Werror),)
++ifeq ($(call cc-option, -fsanitize-coverage=trace-pc -Wno-error),)
+     ifneq ($(CONFIG_COMPILE_TEST),y)
+         $(error Cannot use CONFIG_KCOV: \
+           -fsanitize-coverage=trace-pc is not supported by compiler)
+@@ -8,7 +8,7 @@ ifeq ($(call cc-option, -fsanitize-coverage=trace-pc -Werror),)
+ endif
+ 
+ ifdef CONFIG_KCOV_ENABLE_COMPARISONS
+-    ifeq ($(call cc-option, -fsanitize-coverage=trace-cmp -Werror),)
++    ifeq ($(call cc-option, -fsanitize-coverage=trace-cmp -Wno-error),)
+         ifneq ($(CONFIG_COMPILE_TEST),y)
+             $(error Cannot use CONFIG_KCOV_ENABLE_COMPARISONS: \
+               -fsanitize-coverage=trace-cmp is not supported by compiler)
+diff --git a/sound/soc/codecs/Makefile b/sound/soc/codecs/Makefile
+index bfb79b017..617ca493c 100755
+--- a/sound/soc/codecs/Makefile
++++ b/sound/soc/codecs/Makefile
+@@ -1,5 +1,5 @@
+ # SPDX-License-Identifier: GPL-2.0
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
+ 
+ snd-soc-88pm860x-objs := 88pm860x-codec.o
+ snd-soc-ab8500-codec-objs := ab8500-codec.o
+@@ -510,12 +510,12 @@ obj-$(CONFIG_SND_SOC_CS35L41)	+= cs35l41/
+ 
+ ifneq (, $(filter y,$(CONFIG_SND_SOC_MT6358) $(CONFIG_SND_SOC_MT6366)))
+   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-  subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-  subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
++  subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++  subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
+ endif
+ 
+ ifeq ($(CONFIG_SND_SOC_MT6359),y)
+   MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-  subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-  subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
++  subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++  subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/accdet/mt6359
+ endif
+diff --git a/sound/soc/codecs/fs18xx/Makefile b/sound/soc/codecs/fs18xx/Makefile
+index 21593fdc5..1026f69a1 100644
+--- a/sound/soc/codecs/fs18xx/Makefile
++++ b/sound/soc/codecs/fs18xx/Makefile
+@@ -3,7 +3,7 @@
+ #
+ 
+ #EXTRA_CFLAGS += -DDEBUG -DFSM_DEBUG -DFSM_DEBUG_I2C
+-EXTRA_CFLAGS += -Wall -Werror
++EXTRA_CFLAGS += -Wall -Wno-error
+ # MODFLAGS = -fno-pic
+ # CFLAGS_MODULE = $(MODFLAGS)
+ # AFLAGS_MODULE = $(MODFLAGS)
+diff --git a/sound/soc/codecs/tfa98xx/Makefile b/sound/soc/codecs/tfa98xx/Makefile
+index bd4fcca8d..07152f842 100644
+--- a/sound/soc/codecs/tfa98xx/Makefile
++++ b/sound/soc/codecs/tfa98xx/Makefile
+@@ -19,7 +19,7 @@ subdir-ccflags-y += -I$(srctree)/sound/soc/mediatek/common
+ # debugging support (also enables trace_printk)
+ ccflags-y += -Isound/soc/codecs/tfa98xx/inc
+ ccflags-y += -DDEBUG -DTFA_NON_DSP_SOLUTION
+-ccflags-y += -Werror
++ccflags-y += -Wno-error
+ ccflags-y += $(call cc-option,-Wno-date-time,)
+ 
+ snd-soc-tfa98xx-objs += src/tfa98xx.o
+diff --git a/sound/soc/mediatek/Makefile b/sound/soc/mediatek/Makefile
+index 5b72d5efe..e25219b53 100755
+--- a/sound/soc/mediatek/Makefile
++++ b/sound/soc/mediatek/Makefile
+@@ -10,7 +10,7 @@
+ # MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
+ # GNU General Public License for more details.
+ #
+-subdir-ccflags-y += -Werror
++subdir-ccflags-y += -Wno-error
+ 
+ # scp smartpa related code
+ obj-$(CONFIG_SND_SOC_MTK_SCP_SMARTPA) += scp_spk/
+@@ -53,8 +53,8 @@ MTK_CODEC := $(subst ",,$(CONFIG_MTK_SND_SOC_CODEC))
+ 
+ # PMIC include path
+ ifneq  ($(MTK_CODEC),)
+-subdir-ccflags-y += -Werror -Werror -Icodec/$(MTK_CODEC)/
+-subdir-ccflags-y += -Werror -I$(src)/common_int
++subdir-ccflags-y += -Wno-error -Wno-error -Icodec/$(MTK_CODEC)/
++subdir-ccflags-y += -Wno-error -I$(src)/common_int
+ 
+ # Update pmic built flow to avoid codec init later than codec probe
+ obj-y += codec/$(MTK_CODEC)/
+@@ -64,8 +64,8 @@ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ # flags for not ready feature, uncomment after ready
+ subdir-ccflags-y += -D_GIT318_PMIC_READY
+ subdir-ccflags-y += -DAUDIO_USING_WRAP_DRIVER
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/
+ endif
+ endif
+ 
+@@ -100,16 +100,16 @@ subdir-ccflags-y += -D_MT_IDLE_HEADER
+ subdir-ccflags-y += -D_REG_SYNC_WRITE
+ 
+ # include path
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-${CONFIG_MACH_MT6833} += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6833/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/include
+-subdir-ccflags-${CONFIG_MACH_MT6833} += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/mt6833/
+-subdir-ccflags-${CONFIG_MACH_MT6833} += -Werror -I$(srctree)/drivers/misc/mediatek/dramc/mt6833/
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/accdet/mt6358
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-${CONFIG_MACH_MT6833} += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/mt6833/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/base/power/include
++subdir-ccflags-${CONFIG_MACH_MT6833} += -Wno-error -I$(srctree)/drivers/misc/mediatek/base/power/mt6833/
++subdir-ccflags-${CONFIG_MACH_MT6833} += -Wno-error -I$(srctree)/drivers/misc/mediatek/dramc/mt6833/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/base/power/$(MTK_PLATFORM)
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/dramc/$(MTK_PLATFORM)/
+ 
+ ifeq ($(CONFIG_MACH_MT6833),y)
+ AUDIO_PLATFORM := mt6833
+@@ -117,18 +117,18 @@ else
+ AUDIO_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+ endif
+ 
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)/
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(AUDIO_PLATFORM)/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/scp/$(AUDIO_PLATFORM)/
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/audio_ipi/$(AUDIO_PLATFORM)/
+ 
+ # Common include path
+-subdir-ccflags-y += -Werror -I$(src)/common_int
++subdir-ccflags-y += -Wno-error -I$(src)/common_int
+ 
+ # PMIC include path
+ ifneq  ($(MTK_CODEC),)
+-subdir-ccflags-y += -Werror -I$(src)/codec/$(MTK_CODEC)
++subdir-ccflags-y += -Wno-error -I$(src)/codec/$(MTK_CODEC)
+ endif
+ 
+-subdir-ccflags-y += -Werror -Wno-incompatible-pointer-types
++subdir-ccflags-y += -Wno-error -Wno-incompatible-pointer-types
+ 
+ # Update pmic built flow to avoid codec init later than codec probe
+ ifneq  ($(MTK_CODEC),)
+@@ -140,7 +140,7 @@ obj-y += common_int/
+ obj-y += $(AUDIO_PLATFORM)/
+ 
+ # AP include path
+-subdir-ccflags-y += -Werror -I$(src)/$(AUDIO_PLATFORM)
++subdir-ccflags-y += -Wno-error -I$(src)/$(AUDIO_PLATFORM)
+ endif
+ 
+ obj-$(CONFIG_SND_SOC_AW87339) += aw87339/
+diff --git a/sound/soc/mediatek/common_int/Makefile b/sound/soc/mediatek/common_int/Makefile
+index 2d0d31fea..102feb1dc 100644
+--- a/sound/soc/mediatek/common_int/Makefile
++++ b/sound/soc/mediatek/common_int/Makefile
+@@ -13,9 +13,9 @@
+ 
+ # Old kernel architecture
+ MTK_PLATFORM := $(subst ",,$(CONFIG_MTK_PLATFORM))
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
+-subdir-ccflags-y += -Werror -I$(srctree)/drivers/misc/mediatek/include/mt-plat
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat/$(MTK_PLATFORM)/include
++subdir-ccflags-y += -Wno-error -I$(srctree)/drivers/misc/mediatek/include/mt-plat
+ obj-y += mtk-auddrv-devtree-parser.o
+ #obj-y += mtk-auddrv-underflow-mach.o
+ 
+diff --git a/tools/build/feature/Makefile b/tools/build/feature/Makefile
+index 96982640f..3bdcc1cf0 100644
+--- a/tools/build/feature/Makefile
++++ b/tools/build/feature/Makefile
+@@ -62,10 +62,10 @@ LLVM_CONFIG ?= llvm-config
+ 
+ all: $(FILES)
+ 
+-__BUILD = $(CC) $(CFLAGS) -MD -Wall -Werror -o $@ $(patsubst %.bin,%.c,$(@F)) $(LDFLAGS)
++__BUILD = $(CC) $(CFLAGS) -MD -Wall -Wno-error -o $@ $(patsubst %.bin,%.c,$(@F)) $(LDFLAGS)
+   BUILD = $(__BUILD) > $(@:.bin=.make.output) 2>&1
+ 
+-__BUILDXX = $(CXX) $(CXXFLAGS) -MD -Wall -Werror -o $@ $(patsubst %.bin,%.cpp,$(@F)) $(LDFLAGS)
++__BUILDXX = $(CXX) $(CXXFLAGS) -MD -Wall -Wno-error -o $@ $(patsubst %.bin,%.cpp,$(@F)) $(LDFLAGS)
+   BUILDXX = $(__BUILDXX) > $(@:.bin=.make.output) 2>&1
+ 
+ ###############################
+@@ -189,10 +189,10 @@ $(OUTPUT)test-libbfd.bin:
+ 	$(BUILD) -DPACKAGE='"perf"' -lbfd -lz -liberty -ldl
+ 
+ $(OUTPUT)test-liberty.bin:
+-	$(CC) $(CFLAGS) -Wall -Werror -o $@ test-libbfd.c -DPACKAGE='"perf"' $(LDFLAGS) -lbfd -ldl -liberty
++	$(CC) $(CFLAGS) -Wall -Wno-error -o $@ test-libbfd.c -DPACKAGE='"perf"' $(LDFLAGS) -lbfd -ldl -liberty
+ 
+ $(OUTPUT)test-liberty-z.bin:
+-	$(CC) $(CFLAGS) -Wall -Werror -o $@ test-libbfd.c -DPACKAGE='"perf"' $(LDFLAGS) -lbfd -ldl -liberty -lz
++	$(CC) $(CFLAGS) -Wall -Wno-error -o $@ test-libbfd.c -DPACKAGE='"perf"' $(LDFLAGS) -lbfd -ldl -liberty -lz
+ 
+ $(OUTPUT)test-cplus-demangle.bin:
+ 	$(BUILD) -liberty
+diff --git a/tools/lib/api/Makefile b/tools/lib/api/Makefile
+index a13e9c7f1..3d8166869 100644
+--- a/tools/lib/api/Makefile
++++ b/tools/lib/api/Makefile
+@@ -34,7 +34,7 @@ endif
+ 
+ # Treat warnings as errors unless directed not to
+ ifneq ($(WERROR),0)
+-  CFLAGS += -Werror
++  CFLAGS += -Wno-error
+ endif
+ 
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64
+diff --git a/tools/lib/bpf/Makefile b/tools/lib/bpf/Makefile
+index f02448e86..0b0c4260e 100644
+--- a/tools/lib/bpf/Makefile
++++ b/tools/lib/bpf/Makefile
+@@ -123,7 +123,7 @@ endif
+ 
+ # Append required CFLAGS
+ override CFLAGS += $(EXTRA_WARNINGS)
+-override CFLAGS += -Werror -Wall
++override CFLAGS += -Wno-error -Wall
+ override CFLAGS += -fPIC
+ override CFLAGS += $(INCLUDES)
+ 
+diff --git a/tools/lib/bpf/libbpf.h b/tools/lib/bpf/libbpf.h
+index 7959086eb..efe9b3811 100644
+--- a/tools/lib/bpf/libbpf.h
++++ b/tools/lib/bpf/libbpf.h
+@@ -200,7 +200,7 @@ bool bpf_program__is_perf_event(struct bpf_program *prog);
+  * We don't need __attribute__((packed)) now since it is
+  * unnecessary for 'bpf_map_def' because they are all aligned.
+  * In addition, using it will trigger -Wpacked warning message,
+- * and will be treated as an error due to -Werror.
++ * and will be treated as an error due to -Wno-error.
+  */
+ struct bpf_map_def {
+ 	unsigned int type;
+diff --git a/tools/lib/subcmd/Makefile b/tools/lib/subcmd/Makefile
+index 5dbb0dde2..f07e74710 100644
+--- a/tools/lib/subcmd/Makefile
++++ b/tools/lib/subcmd/Makefile
+@@ -38,7 +38,7 @@ endif
+ 
+ # Treat warnings as errors unless directed not to
+ ifneq ($(WERROR),0)
+-  CFLAGS += -Werror
++  CFLAGS += -Wno-error
+ endif
+ 
+ CFLAGS += -D_LARGEFILE64_SOURCE -D_FILE_OFFSET_BITS=64 -D_GNU_SOURCE
+diff --git a/tools/objtool/Makefile b/tools/objtool/Makefile
+index 7786bce81..ba3825352 100644
+--- a/tools/objtool/Makefile
++++ b/tools/objtool/Makefile
+@@ -35,7 +35,7 @@ INCLUDES := -I$(srctree)/tools/include \
+ 	    -I$(srctree)/tools/arch/$(HOSTARCH)/include/uapi \
+ 	    -I$(srctree)/tools/objtool/arch/$(ARCH)/include
+ WARNINGS := $(EXTRA_WARNINGS) -Wno-switch-default -Wno-switch-enum -Wno-packed
+-CFLAGS   := -Wall -Werror $(WARNINGS) -fomit-frame-pointer -O2 -g $(INCLUDES) $(LIBELF_FLAGS)
++CFLAGS   := -Wall -Wno-error $(WARNINGS) -fomit-frame-pointer -O2 -g $(INCLUDES) $(LIBELF_FLAGS)
+ LDFLAGS  += $(LIBELF_LIBS) $(LIBSUBCMD)
+ 
+ # Allow old libelf to be used:
+diff --git a/tools/perf/Makefile.config b/tools/perf/Makefile.config
+index 8baaf9797..3620b160e 100644
+--- a/tools/perf/Makefile.config
++++ b/tools/perf/Makefile.config
+@@ -139,8 +139,8 @@ endif
+ 
+ # Treat warnings as errors unless directed not to
+ ifneq ($(WERROR),0)
+-  CFLAGS += -Werror
+-  CXXFLAGS += -Werror
++  CFLAGS += -Wno-error
++  CXXFLAGS += -Wno-error
+ endif
+ 
+ ifndef DEBUG
+diff --git a/tools/perf/Makefile.perf b/tools/perf/Makefile.perf
+index 349ea5133..0bb1713ce 100644
+--- a/tools/perf/Makefile.perf
++++ b/tools/perf/Makefile.perf
+@@ -564,12 +564,12 @@ $(OUTPUT)perf-%: %.o $(PERFLIBS)
+ 
+ ifndef NO_PERF_READ_VDSO32
+ $(OUTPUT)perf-read-vdso32: perf-read-vdso.c util/find-vdso-map.c
+-	$(QUIET_CC)$(CC) -m32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
++	$(QUIET_CC)$(CC) -m32 $(filter -static,$(LDFLAGS)) -Wall -Wno-error -o $@ perf-read-vdso.c
+ endif
+ 
+ ifndef NO_PERF_READ_VDSOX32
+ $(OUTPUT)perf-read-vdsox32: perf-read-vdso.c util/find-vdso-map.c
+-	$(QUIET_CC)$(CC) -mx32 $(filter -static,$(LDFLAGS)) -Wall -Werror -o $@ perf-read-vdso.c
++	$(QUIET_CC)$(CC) -mx32 $(filter -static,$(LDFLAGS)) -Wall -Wno-error -o $@ perf-read-vdso.c
+ endif
+ 
+ ifndef NO_JVMTI
+diff --git a/tools/testing/selftests/nsfs/Makefile b/tools/testing/selftests/nsfs/Makefile
+index 9ff7c7f80..a4ac59384 100644
+--- a/tools/testing/selftests/nsfs/Makefile
++++ b/tools/testing/selftests/nsfs/Makefile
+@@ -1,5 +1,5 @@
+ TEST_GEN_PROGS := owner pidns
+ 
+-CFLAGS := -Wall -Werror
++CFLAGS := -Wall -Wno-error
+ 
+ include ../lib.mk
+diff --git a/tools/testing/selftests/powerpc/Makefile b/tools/testing/selftests/powerpc/Makefile
+index f6b133873..ba7cfc7e4 100644
+--- a/tools/testing/selftests/powerpc/Makefile
++++ b/tools/testing/selftests/powerpc/Makefile
+@@ -9,7 +9,7 @@ ifeq ($(ARCH),powerpc)
+ 
+ GIT_VERSION = $(shell git describe --always --long --dirty || echo "unknown")
+ 
+-CFLAGS := -std=gnu99 -O2 -Wall -Werror -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CURDIR)/include $(CFLAGS)
++CFLAGS := -std=gnu99 -O2 -Wall -Wno-error -DGIT_VERSION='"$(GIT_VERSION)"' -I$(CURDIR)/include $(CFLAGS)
+ 
+ export CFLAGS
+ 
+diff --git a/tools/usb/usbip/configure.ac b/tools/usb/usbip/configure.ac
+index 607d05c5c..8c4308812 100644
+--- a/tools/usb/usbip/configure.ac
++++ b/tools/usb/usbip/configure.ac
+@@ -18,7 +18,7 @@ LT_INIT
+ # Silent build for automake >= 1.11
+ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
+ 
+-AC_SUBST([EXTRA_CFLAGS], ["-Wall -Werror -Wextra -std=gnu99"])
++AC_SUBST([EXTRA_CFLAGS], ["-Wall -Wno-error -Wextra -std=gnu99"])
+ 
+ # Checks for programs.
+ AC_PROG_CC
+diff --git a/tools/virtio/Makefile b/tools/virtio/Makefile
+index 8e2a90811..f26a1bcb4 100644
+--- a/tools/virtio/Makefile
++++ b/tools/virtio/Makefile
+@@ -4,7 +4,7 @@ test: virtio_test vringh_test
+ virtio_test: virtio_ring.o virtio_test.o
+ vringh_test: vringh_test.o vringh.o virtio_ring.o
+ 
+-CFLAGS += -g -O2 -Werror -Wall -I. -I../include/ -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
++CFLAGS += -g -O2 -Wno-error -Wall -I. -I../include/ -I ../../usr/include/ -Wno-pointer-sign -fno-strict-overflow -fno-strict-aliasing -fno-common -MMD -U_FORTIFY_SOURCE
+ vpath %.c ../../drivers/virtio ../../drivers/vhost
+ mod:
+ 	${MAKE} -C `pwd`/../.. M=`pwd`/vhost_test V=${V}
+diff --git a/virt/kvm/arm/mmu.c b/virt/kvm/arm/mmu.c
+index 3814cdad6..5570264a1 100644
+--- a/virt/kvm/arm/mmu.c
++++ b/virt/kvm/arm/mmu.c
+@@ -1323,10 +1323,6 @@ static int user_mem_abort(struct kvm_vcpu *vcpu, phys_addr_t fault_ipa,
+ 	unsigned long flags = 0;
+ 
+ 	write_fault = kvm_is_write_fault(vcpu);
+-	if (fault_status == FSC_PERM && !write_fault) {
+-		kvm_err("Unexpected L2 read permission error\n");
+-		return -EFAULT;
+-	}
+ 
+ 	/* Let's check if we will get back a huge page backed by hugetlbfs */
+ 	down_read(&current->mm->mmap_sem);
+diff --git a/virt/kvm/arm/vgic/vgic-its.c b/virt/kvm/arm/vgic/vgic-its.c
+index 8354ec4ef..e25d325e1 100644
+--- a/virt/kvm/arm/vgic/vgic-its.c
++++ b/virt/kvm/arm/vgic/vgic-its.c
+@@ -1417,6 +1417,9 @@ static unsigned long vgic_mmio_read_its_baser(struct kvm *kvm,
+ }
+ 
+ #define GITS_BASER_RO_MASK	(GENMASK_ULL(52, 48) | GENMASK_ULL(58, 56))
++static void vgic_its_free_device_list(struct kvm *kvm, struct vgic_its *its);
++static void vgic_its_free_collection_list(struct kvm *kvm, struct vgic_its *its);
++
+ static void vgic_mmio_write_its_baser(struct kvm *kvm,
+ 				      struct vgic_its *its,
+ 				      gpa_t addr, unsigned int len,
+@@ -1455,6 +1458,20 @@ static void vgic_mmio_write_its_baser(struct kvm *kvm,
+ 	reg = vgic_sanitise_its_baser(reg);
+ 
+ 	*regptr = reg;
++
++	/* Table no longer valid: clear cached data */
++	if (!(reg & GITS_BASER_VALID)) {
++		switch (device_type) {
++		case GITS_BASER_TYPE_DEVICE:
++			vgic_its_free_device_list(kvm, its);
++			break;
++		case GITS_BASER_TYPE_COLLECTION:
++			vgic_its_free_collection_list(kvm, its);
++			break;
++		default:
++			break;
++		}
++	}
+ }
+ 
+ static unsigned long vgic_mmio_read_its_ctlr(struct kvm *vcpu,
+@@ -1646,6 +1663,24 @@ static void vgic_its_free_device(struct kvm *kvm, struct its_device *dev)
+ 	kfree(dev);
+ }
+ 
++/* its lock must be held */
++static void vgic_its_free_device_list(struct kvm *kvm, struct vgic_its *its)
++{
++	struct its_device *cur, *temp;
++
++	list_for_each_entry_safe(cur, temp, &its->device_list, dev_list)
++		vgic_its_free_device(kvm, cur);
++}
++
++/* its lock must be held */
++static void vgic_its_free_collection_list(struct kvm *kvm, struct vgic_its *its)
++{
++	struct its_collection *cur, *temp;
++
++	list_for_each_entry_safe(cur, temp, &its->collection_list, coll_list)
++		vgic_its_free_collection(its, cur->collection_id);
++}
++
+ static void vgic_its_destroy(struct kvm_device *kvm_dev)
+ {
+ 	struct kvm *kvm = kvm_dev->kvm;
+@@ -2378,6 +2413,45 @@ static int vgic_its_commit_v0(struct vgic_its *its)
+ 	return 0;
+ }
+ 
++static void vgic_its_reset(struct kvm *kvm, struct vgic_its *its)
++{
++	/* The lists may not have been initialized yet. */
++	if (!its->device_list.next)
++		return;
++
++	its->baser_device_table &= ~GITS_BASER_VALID;
++	its->baser_coll_table &= ~GITS_BASER_VALID;
++
++	its->cbaser = 0;
++	its->creadr = 0;
++	its->cwriter = 0;
++	its->enabled = 0;
++
++	vgic_its_free_device_list(kvm, its);
++	vgic_its_free_collection_list(kvm, its);
++}
++
++/* ITS reset support */
++static int vgic_its_ctrl(struct vgic_its *its, u64 attr)
++{
++	struct kvm *kvm = its->dev->kvm;
++	int ret = 0;
++
++	mutex_lock(&its->its_lock);
++
++	switch (attr) {
++	case KVM_DEV_ARM_ITS_CTRL_RESET:
++		vgic_its_reset(kvm, its);
++		break;
++	default:
++		ret = -ENXIO;
++		break;
++	}
++
++	mutex_unlock(&its->its_lock);
++	return ret;
++}
++
+ static int vgic_its_has_attr(struct kvm_device *dev,
+ 			     struct kvm_device_attr *attr)
+ {
+@@ -2392,6 +2466,9 @@ static int vgic_its_has_attr(struct kvm_device *dev,
+ 		switch (attr->attr) {
+ 		case KVM_DEV_ARM_VGIC_CTRL_INIT:
+ 			return 0;
++		case KVM_DEV_ARM_ITS_CTRL_RESET:
++			/* ITS reset is always supported */
++			return 0;
+ 		case KVM_DEV_ARM_ITS_SAVE_TABLES:
+ 			return 0;
+ 		case KVM_DEV_ARM_ITS_RESTORE_TABLES:
+@@ -2436,6 +2513,8 @@ static int vgic_its_set_attr(struct kvm_device *dev,
+ 		case KVM_DEV_ARM_VGIC_CTRL_INIT:
+ 			/* Nothing to do */
+ 			return 0;
++		case KVM_DEV_ARM_ITS_CTRL_RESET:
++			return vgic_its_ctrl(its, KVM_DEV_ARM_ITS_CTRL_RESET);
+ 		case KVM_DEV_ARM_ITS_SAVE_TABLES:
+ 			return abi->save_tables(its);
+ 		case KVM_DEV_ARM_ITS_RESTORE_TABLES:
+diff --git a/virt/kvm/arm/vgic/vgic-mmio-v3.c b/virt/kvm/arm/vgic/vgic-mmio-v3.c
+index 408ef0663..79cf6ab71 100644
+--- a/virt/kvm/arm/vgic/vgic-mmio-v3.c
++++ b/virt/kvm/arm/vgic/vgic-mmio-v3.c
+@@ -294,7 +294,7 @@ u64 vgic_sanitise_outer_cacheability(u64 field)
+ 	case GIC_BASER_CACHE_nC:
+ 		return field;
+ 	default:
+-		return GIC_BASER_CACHE_nC;
++		return GIC_BASER_CACHE_SameAsInner;
+ 	}
+ }
+ 

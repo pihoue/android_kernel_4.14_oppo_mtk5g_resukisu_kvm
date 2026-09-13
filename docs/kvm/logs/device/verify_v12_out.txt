@@ -1,0 +1,97 @@
+############ 0. 内核版本 ############
+Linux version  (proot@termux) (gcc (GCC) 13.3.0, GNU ld (GNU Binutils) 2.42) 
+
+############ 1. KVM 状态 ############
+crw-rw-rw-. 1 root root 10, 232 Sep 13 05:34 /dev/kvm
+
+############ 2. ID_AA64* 寄存器探针（v8 之前应全部 ENOENT） ############
+KVM_GET_API_VERSION = 12
+
+--- KVM_ARM_VCPU_INIT feature-bit probe (target=5 GENERIC_V8) ---
+  features=none           -> OK
+  features=PSCI_0_2       -> ERR 22 (Invalid argument)
+  features=PMU_V3         -> OK
+  features=SVE            -> ERR 2 (No such file or directory)
+  features=PTRAUTH_ADDR   -> ERR 2 (No such file or directory)
+  features=PTRAUTH_GEN    -> ERR 2 (No such file or directory)
+
+--- register GET/SET probe (after clean INIT) ---
+  MIDR_EL1           GET_OK(00000000414fd0b0) SET_OK
+  MPIDR_EL1          GET_OK(0000000080000000) SET_OK
+  ID_AA64PFR0_EL1    GET_OK(1100000011111112) SET_OK
+  ID_AA64PFR1_EL1    GET_OK(0000000000000010) SET_OK
+  ID_AA64DFR0_EL1    GET_OK(0000000010305408) SET_OK
+  ID_AA64ISAR0_EL1   GET_OK(0000100010211120) SET_OK
+  ID_AA64MMFR0_EL1   GET_OK(0000000000101122) SET_OK
+  CLIDR_EL1          GET_OK(00000000c3000123) SET_OK
+  CTR_EL0            GET_OK(000000009444c004) SET_OK
+
+############ 3. QEMU 版本 ############
+QEMU emulator version 8.2.2 (Debian 1:8.2.2+ds-0ubuntu1.18)
+Copyright (c) 2003-2023 Fabrice Bellard and the QEMU Project developers
+
+############ 4. QEMU 8.x + -cpu host + ITS 启动 guest（v8 会死在 put registers） ############
+[    1.663742] NET: Registered PF_INET protocol family
+[    1.672752] IP idents hash table entries: 16384 (order: 5, 131072 bytes, linear)
+[    1.684587] tcp_listen_portaddr_hash hash table entries: 512 (order: 1, 8192 bytes, linear)
+[    1.701815] Table-perturb hash table entries: 65536 (order: 6, 262144 bytes, linear)
+[    1.718112] TCP established hash table entries: 8192 (order: 4, 65536 bytes, linear)
+[    1.732507] TCP bind hash table entries: 8192 (order: 6, 262144 bytes, linear)
+[    1.744240] TCP: Hash tables configured (established 8192 bind 8192)
+[    1.756231] MPTCP token hash table entries: 1024 (order: 3, 24576 bytes, linear)
+[    1.768372] UDP hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    1.782624] UDP-Lite hash table entries: 512 (order: 2, 16384 bytes, linear)
+[    1.795792] NET: Registered PF_UNIX/PF_LOCAL protocol family
+[    1.806043] NET: Registered PF_XDP protocol family
+[    1.817494] PCI: CLS 0 bytes, default 64
+[    1.825033] Unpacking initramfs...
+[    1.848133] kvm [1]: HYP mode not available
+[    1.856847] Initialise system trusted keyrings
+[    1.869309] Freeing initrd memory: 980K
+[    1.877642] workingset: timestamp_bits=44 max_order=18 bucket_order=0
+[    1.888501] zbud: loaded
+[    1.902463] Key type asymmetric registered
+[    1.911260] Asymmetric key parser 'x509' registered
+[    1.920650] Block layer SCSI generic (bsg) driver version 0.4 loaded (major 249)
+[    1.931108] io scheduler mq-deadline registered
+[    1.936520] io scheduler kyber registered
+[    1.944526] io scheduler bfq registered
+[    1.951316] pci-host-generic 4010000000.pcie: host bridge /pcie@10000000 ranges:
+[    1.965352] pci-host-generic 4010000000.pcie:       IO 0x003eff0000..0x003effffff -> 0x0000000000
+[    1.982851] pci-host-generic 4010000000.pcie:      MEM 0x0010000000..0x003efeffff -> 0x0010000000
+[    1.996376] pci-host-generic 4010000000.pcie:      MEM 0x8000000000..0xffffffffff -> 0x8000000000
+[    2.007901] pci-host-generic 4010000000.pcie: Memory resource size exceeds max for 32 bits
+[    2.022618] pci-host-generic 4010000000.pcie: ECAM at [mem 0x4010000000-0x401fffffff] for [bus 00-ff]
+[    2.037856] pci-host-generic 4010000000.pcie: PCI host bridge to bus 0000:00
+[    2.050562] pci_bus 0000:00: root bus resource [bus 00-ff]
+[    2.058245] pci_bus 0000:00: root bus resource [io  0x0000-0xffff]
+[    2.065522] pci_bus 0000:00: root bus resource [mem 0x10000000-0x3efeffff]
+[    2.077478] pci_bus 0000:00: root bus resource [mem 0x8000000000-0xffffffffff]
+[    2.091235] pci 0000:00:00.0: [1b36:0008] type 00 class 0x060000
+[    2.108551] Serial: 8250/16550 driver, 4 ports, IRQ sharing enabled
+[    2.125833] rtc-pl031 9010000.pl031: registered as rtc0
+[    2.134876] rtc-pl031 9010000.pl031: setting system clock to 2026-09-13T05:35:56 UTC (1789277756)
+[    2.164839] NET: Registered PF_INET6 protocol family
+[    2.176007] Segment Routing with IPv6
+[    2.186880] In-situ OAM (IOAM) with IPv6
+[    2.211176] registered taskstats version 1
+[    2.218323] Loading compiled-in X.509 certificates
+[    2.229423] Loaded X.509 cert 'alpinelinux.org: Alpine Linux kernel key: 87fa969a47f3e2a6aa35859eb932a17c95abcd82'
+[    2.250623] Key type .fscrypt registered
+[    2.257760] Key type fscrypt-provisioning registered
+[    2.266277] clk: Disabling unused clocks
+[    2.271099] uart-pl011 9000000.pl011: no DMA platform data
+[    2.281508] Freeing unused kernel memory: 3264K
+[    2.288430] Run /init as init process
+===== GUEST INITRAMFS SHELL RUNNING ON KVM =====
+
+
+BusyBox v1.36.1 (Ubuntu 1:1.36.1-6ubuntu3.1) built-in shell (ash)
+Enter 'help' for a list of built-in commands.
+
+sh: can't access tty; job control turned off
+~ # [6nqemu-system-aarch64: terminating on signal 15 from pid 11653 (timeout)
+
+############ 5. 关键字检查 ############
+（上面的输出里应能看到 GUEST_ALIVE_V9 与 ---GUEST_DONE---；
+  且不应有 'Failed to put registers after init' / 'full reset is not supported'）

@@ -1,0 +1,6 @@
+first KVM_GET_REG_LIST errno = 22 (expect 7 E2BIG)
+kernel reports n = 0
+Traceback (most recent call last):
+  File "/sdcard/Download/Operit/tmp/probe_reglist.py", line 62, in <module>
+    fcntl.ioctl(vc, KVM_GET_REG_LIST, big)
+OSError: [Errno 22] Invalid argument

@@ -1,0 +1,6 @@
+id=kvm_access
+name=KVM access (SELinux policy)
+version=v1.0
+versionCode=1
+author=Operit
+description=Allows apps and shell to open /dev/kvm and run VMs (QEMU/Termux). AOSP neverallows kvm_device for app domains, so this module patches SELinux policy at boot via KernelSU.

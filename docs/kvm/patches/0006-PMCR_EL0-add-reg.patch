@@ -1,0 +1,11 @@
+--- /home/moao/resukisu_kernel/arch/arm64/kvm/sys_regs.c.pre_v12	2026-09-13 13:05:12.894674692 +0800
++++ /home/moao/resukisu_kernel/arch/arm64/kvm/sys_regs.c	2026-09-13 13:24:02.330158540 +0800
+@@ -982,7 +982,7 @@
+ 
+ 	{ SYS_DESC(SYS_CSSELR_EL1), NULL, reset_unknown, CSSELR_EL1 },
+ 
+-	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, },
++	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, PMCR_EL0 },
+ 	{ SYS_DESC(SYS_PMCNTENSET_EL0), access_pmcnten, reset_unknown, PMCNTENSET_EL0 },
+ 	{ SYS_DESC(SYS_PMCNTENCLR_EL0), access_pmcnten, NULL, PMCNTENSET_EL0 },
+ 	{ SYS_DESC(SYS_PMOVSCLR_EL0), access_pmovs, NULL, PMOVSSET_EL0 },

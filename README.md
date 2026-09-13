@@ -43,7 +43,7 @@ dd if=/dev/block/sdc bs=4096 count=64 | md5sum
 # 原厂(GZ 生效): 5b4cffd99cf0d40e9038ba870024e985
 ```
 
-刷入 / 还原脚本（`flash-gpt.sh`）与两个 GPT 镜像随发布包提供，详见 `docs/kvm/README-FLASH.txt` 第七节。
+刷入 / 还原脚本 `docs/kvm/flash-gpt.sh`、两个 GPT 镜像位于 `docs/kvm/gpt/`，详见 `docs/kvm/README-FLASH.txt` 第七节。
 
 ---
 
@@ -63,9 +63,9 @@ dd if=/dev/block/sdc bs=4096 count=64 | md5sum
 
 - **v11**：该表有 `BUG_ON(check_sysreg_table(...))` 严格升序检查，补丁按 `Op0→Op1→CRn→CRm→Op2` 编码升序插入；12 个新增项使用「返回 0」getter（clang-11 汇编器不认识部分 `mrs` 寄存器名，且未分配编码的 MRS 是 UNDEFINED，取值 0 == 该 ID 字段未实现，对纯 AArch64 guest 无影响）。
 - **v12**：`sys_reg_descs[]` 中 `PMCR_EL0` 缺 `.reg`，导致 `index_to_sys_reg_desc()` 把它置空并回退到 invariant 表 → `KVM_GET_ONE_REG` 返回 `-ENOENT`；而 `reset_pmcr()` / `access_pmcr()` 其实一直在读写 `vcpu_sys_reg(vcpu, PMCR_EL0)`，属该 vendor 树的真实缺陷。PMU_V3 可用时 QEMU 一定会读它。
-- **v13**：`tools/probe_reglist.py` 纯用户态复现了 QEMU 的写回循环 —— `KVM_GET_REG_LIST` 得到 424 项，过滤出 QEMU 会同步的 208 项后逐个「读出来 → 原值写回」。修复前唯一失败项是 `KVM_REG_ARM_DEMUX`（c15 CSSIDR）；A76+A55 大小核两簇 `CCSIDR` 不同（`0x701fe01a` / `0x201fe01a`），读与写两次 ioctl 落在不同簇时严格比较即 `-EINVAL`。CCSIDR 本身只是宿主缓存几何的只读视图，故接受写入并忽略其值。
+- **v13**：`docs/kvm/tools/probe_reglist.py` 纯用户态复现了 QEMU 的写回循环 —— `KVM_GET_REG_LIST` 得到 424 项，过滤出 QEMU 会同步的 208 项后逐个「读出来 → 原值写回」。修复前唯一失败项是 `KVM_REG_ARM_DEMUX`（c15 CCSIDR）；A76+A55 大小核两簇 `CCSIDR` 不同（`0x701fe01a` / `0x201fe01a`），读与写两次 ioctl 落在不同簇时严格比较即 `-EINVAL`。CCSIDR 本身只是宿主缓存几何的只读视图，故接受写入并忽略其值。
 
-> `v10`（`CONFIG_MTK_CHARGER_UNLIMITED` 快充开关）经排查证实为**死开关**（`mtk_charger.c` 在本机配置下根本不参与编译，本机充电由 OPLUS 栈无条件执行），已还原，补丁 0004 仅作留档，**未采用**。
+> `v10`（`CONFIG_MTK_CHARGER_UNLIMITED` 快充开关）经排查证实为**死开关**（`mtk_charger.c` 在本机配置下根本不参与编译，本机充电实际由 OPLUS 栈无条件执行），已还原，补丁 0004 仅作留档，**未采用**。
 
 ---
 
@@ -89,7 +89,7 @@ make -j32 $MAKEARGS olddefconfig
 make -j32 $MAKEARGS Image.gz
 ```
 
-完整脚本见发布包 `tools/build_v11.sh`（v11/v12/v13 共用），编译信息另见仓库内 `BUILD-INFO.txt` 与 `BUILD-CONFIG.txt`。
+完整脚本见 `docs/kvm/tools/build_v11.sh`（v11/v12/v13 共用），编译信息另见仓库内 `BUILD-INFO.txt` 与 `BUILD-CONFIG.txt`。
 
 打包 boot：
 
@@ -112,14 +112,14 @@ boot 分区为 **`/dev/block/sdc44`（33,554,432 B）**，镜像只覆盖前 **1
 
 ```bash
 # 刷入 v13（推荐用脚本，自带 MD5 校验 + 回读比对 + --rollback）
-su -c "sh flash.sh"
+su -c "sh docs/kvm/flash.sh"
 
 # 手动
-su -c "dd if=images/boot_kvm_v13.img of=/dev/block/sdc44 bs=4096 && sync"
+su -c "dd if=docs/kvm/images/boot_kvm_v13.img of=/dev/block/sdc44 bs=4096 && sync"
 su -c "dd if=/dev/block/sdc44 bs=512 count=38900 | md5sum"   # 期望 19c834de…
 
 # 回滚
-su -c "sh flash.sh --rollback"                                # -> v12
+su -c "sh docs/kvm/flash.sh --rollback"                       # -> v12
 ```
 
 | 镜像 | 大小 | MD5 |
@@ -135,9 +135,9 @@ su -c "sh flash.sh --rollback"                                # -> v12
 ```bash
 cat /proc/version                     # #9 SMP PREEMPT Sun Sep 13 15:14:47 CST 2026
 ls -l /dev/kvm                        # crw-rw-rw- root root 10,232
-python3 tools/probe_reglist.py        # 208 regs, FAILS = 0
-python3 tools/probe_demux.py          # demux 4/4 GET+SET OK
-bash    tools/verify_v9.sh            # ===== GUEST INITRAMFS SHELL RUNNING ON KVM =====
+python3 docs/kvm/tools/probe_reglist.py   # 208 regs, FAILS = 0
+python3 docs/kvm/tools/probe_demux.py     # demux 4/4 GET+SET OK
+bash    docs/kvm/tools/verify_v9.sh       # ===== GUEST INITRAMFS SHELL RUNNING ON KVM =====
 ```
 
 v13 实测结果（2026-09-13）：
@@ -151,11 +151,11 @@ v13 实测结果（2026-09-13）：
 | E2E 端到端 | 3/3 通过，guest 内 `uname -m` = `aarch64` ✓ |
 | 回归压测 | `-serial null` ×6 全过；`-serial stdio` ×3 全过 ✓ |
 
-> 另注：普通 App 域访问 `/dev/kvm` 需要 SELinux 策略放行。发布包提供 KernelSU/Magisk 模块 **`kvm_access`**（经 `sepolicy.rule` 于开机注入策略，不改只读分区）。App 域已实测可 `open` `/dev/kvm`、拿到 api_version 12、创建 vm/vcpu 并 `mmap` vCPU 成功。
+> 另注：普通 App 域访问 `/dev/kvm` 需要 SELinux 策略放行。仓库提供 KernelSU/Magisk 模块 **`kvm_access`**（`docs/kvm/magisk-module/`，经 `sepolicy.rule` 于开机注入策略，不改只读分区）。App 域已实测可 `open` `/dev/kvm`、拿到 api_version 12、创建 vm/vcpu 并 `mmap` vCPU 成功。
 
 ---
 
-## 6. 仓库内文档
+## 6. 仓库内文件索引
 
 | 路径 | 内容 |
 |---|---|
@@ -163,27 +163,39 @@ v13 实测结果（2026-09-13）：
 | `BUILD-CONFIG.txt` | 编译所用的完整 `.config` |
 | `docs/kvm/README-KVM.txt` | v8~v13 完整技术记录（根因、验证数据、回滚） |
 | `docs/kvm/README-FLASH.txt` | 刷入 / 回滚 / 验证 / GPT 处理的完整说明 |
-| `docs/kvm/MANIFEST.txt` | 发布归档清单（含各镜像 SHA256/MD5） |
-| `docs/kvm/RELEASE-INFO.txt` | 发布压缩包结构与解压/使用说明 |
+| `docs/kvm/MANIFEST.txt` | 归档清单（含各镜像 SHA256/MD5） |
+| `docs/kvm/RELEASE-INFO.txt` | 归档包结构与解压/使用说明 |
 | `docs/kvm/README-upstream-resukisu.md` | 上游（Re-SukiSU）原 README 备份 |
+| `docs/kvm/flash.sh` · `flash-gpt.sh` | 内核刷入脚本 · GPT 刷入/还原脚本 |
+| `docs/kvm/System.map` | v13 内核符号表 |
+| `docs/kvm/patches/` | 内核补丁 0001~0007 + `all-changes-vs-vendor.patch` |
+| `docs/kvm/tools/` | 打补丁脚本 · KVM 探针 · 压测 / E2E · 编译脚本 · 早期工具 |
+| `docs/kvm/gpt/` | NoGZ 与原厂 GPT + `GPT-CHANGES.txt` + GZ 相关工具 |
+| `docs/kvm/magisk-module/` | `kvm_access` 模块（源码 + 可刷 zip） |
+| `docs/kvm/refs/` | QEMU 8.2.2 参考源码 · 补丁前原始文件 · 历史 config |
+| `docs/kvm/logs/` | 编译日志 · 设备侧验证原始日志 · 早期失败日志 |
+| `docs/kvm/images/` | 可刷入镜像：v13 / v12 / v11 + `Image.gz` |
 | `drivers/kernelsu` → `../KernelSU/kernel` | Re-SukiSU 内核侧集成软链（`KernelSU/` 目录按 `.gitignore` 不入库） |
 | `kernel/cfi_compat.c` | 为兼容闭源 MTK 模块而加的 CFI 兼容层 |
 
-## 7. 未包含在本分支的发布物料
+## 7. 发布物料
 
-`boot` 镜像、内核补丁文件、GPT 分区表、Magisk 模块、探针/压测脚本、编译与设备日志、QEMU 参考源码等，均打包在发布归档 **`kvm_mt6833_v13_full.tar.xz`** 中：
+原发布归档 `kvm_mt6833_v13_full.tar.xz` 的内容已纳入本分支，位于 `docs/kvm/`，目录结构与发布包保持一致：
 
 ```
-kvm_mt6833_v13_20260913/
-├── images/     boot_kvm_v13.img / Image.gz / v12 / v11
-├── gpt/        pgpt4k_nogz.bin · pgpt4k_orig.bin · GPT-CHANGES.txt · tools/
-├── patches/    0001~0007（v8/v9/v10 留档/v11/v12/v13）
-├── tools/      打补丁脚本 · 探针 · 压测 · 编译脚本
-├── magisk-module/ kvm_access（源码 + 可刷 zip）
-├── refs/ logs/ flash.sh flash-gpt.sh README*.txt MANIFEST.txt
+docs/kvm/
+├── images/        boot_kvm_v13.img · boot_kvm_v12.img · boot_kvm_v11.img · Image.gz
+├── gpt/           pgpt4k_nogz.bin · pgpt4k_orig.bin · pgpt-raw-17408B.bin · GPT-CHANGES.txt · tools/
+├── patches/       0001~0007（v8/v9/v10 留档/v11/v12/v13）+ all-changes-vs-vendor.patch
+├── tools/         打补丁 / 探针 / 压测 / 编译脚本（含 legacy/）
+├── magisk-module/ kvm_access（源码 + kvm_access.zip）
+├── refs/          QEMU 8.2.2 参考 + prepatch 原始文件 + 历史 config
+├── logs/          build/ · device/ · legacy/
+├── System.map · flash.sh · flash-gpt.sh
+└── README-KVM.txt · README-FLASH.txt · MANIFEST.txt · RELEASE-INFO.txt
 ```
 
-（本分支的 `.gitignore` 忽略 `*.patch`，故补丁文件未入库；如需一并纳管请告知。）
+> 镜像与二进制属于发布产物，体积约 78 MB。
 
 ---
 

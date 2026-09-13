@@ -1,0 +1,21 @@
+--- a/arch/arm64/kvm/sys_regs.c
++++ b/arch/arm64/kvm/sys_regs.c
+@@ -2042,8 +2042,16 @@
+ 		if (get_user(newval, uval))
+ 			return -EFAULT;
+ 
+-		if (newval != get_ccsidr(val))
+-			return -EINVAL;
++		/*
++		 * CCSIDR 是只读的宿主缓存几何视图，内核本就无法"设置"它，
++		 * get 永远返回真实值。而在大小核(big.LITTLE)系统上，
++		 * 生成该值的读操作与本次写回可能落在不同簇，两簇 CCSIDR 不同，
++		 * 于是严格比较会让 QEMU 的 KVM_PUT_FULL_STATE 失败并报
++		 * "Failed to put registers after init: Invalid argument"
++		 * (demux 寄存器会通过 KVM_GET_REG_LIST 暴露并被原值写回)。
++		 * 因此接受写入并忽略其值。
++		 */
++		(void)newval;
+ 		return 0;
+ 	default:
+ 		return -ENOENT;

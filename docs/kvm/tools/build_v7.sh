@@ -1,0 +1,25 @@
+#!/bin/bash
+# OPERIT v7 build: clang-r383902 (vendor-matching) + vendor /proc/config.gz + KVM
+cd /home/moao/resukisu_kernel || exit 1
+export PATH=$PWD/toolchains/clang/bin:$PWD/toolchains/gcc64/bin:$PATH
+export ARCH=arm64
+export CLANG_PREBUILT_BIN=$PWD/toolchains/clang/bin
+export LINUX_GCC_CROSS_COMPILE_PREBUILTS_BIN=$PWD/toolchains/gcc64/bin
+export KCFLAGS="-fno-builtin-stpcpy -Wno-error=pointer-to-int-cast -Wno-pointer-to-int-cast -Wno-strict-prototypes -Wno-error=strict-prototypes"
+MAKEARGS="O=out ARCH=arm64 CC=clang LD=ld.lld LD_LIBRARY_PATH=$PWD/toolchains/clang/lib64 AR=llvm-ar NM=llvm-nm OBJCOPY=llvm-objcopy OBJDUMP=llvm-objdump STRIP=llvm-strip CLANG_TRIPLE=aarch64-linux-gnu- CROSS_COMPILE=aarch64-linux-androidkernel-"
+
+echo "=== CLANG VERSION ==="
+clang --version | head -2
+echo "=== OLDDEFCONFIG ==="
+make -j32 $MAKEARGS olddefconfig
+echo "OLDEFCONFIG_RC=$?"
+echo "=== KEY CONFIG ==="
+grep -E "^CONFIG_(LTO|LTO_CLANG|LTO_NONE|CFI|CFI_CLANG|CFI_CLANG_SHADOW|SHADOW_CALL_STACK|VIRTUALIZATION|KVM|KVM_ARM_HOST|ARM64_VHE|HYBRIDSWAP|RANDOMIZE_MODULE_REGION_FULL)" out/.config
+echo "=== BUILD START $(date) ==="
+make -j32 $MAKEARGS Image.gz
+echo "BUILD_RC=$?"
+echo "=== ARTIFACTS ==="
+ls -l out/arch/arm64/boot/Image.gz out/vmlinux out/Module.symvers 2>&1
+echo "=== MODULE_LAYOUT CRC (expect 0x1b7f9455) ==="
+grep -E "module_layout" out/Module.symvers 2>&1
+echo "=== BUILD END $(date) ==="

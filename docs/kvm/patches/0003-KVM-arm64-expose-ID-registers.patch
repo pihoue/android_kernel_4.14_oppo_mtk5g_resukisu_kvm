@@ -1,0 +1,59 @@
+--- /tmp/prepatch/sys_regs.orig	2026-09-13 12:08:08.732376698 +0800
++++ /home/moao/resukisu_kernel/arch/arm64/kvm/sys_regs.c	2026-09-13 12:08:19.220327784 +0800
+@@ -1834,6 +1834,14 @@
+ FUNCTION_INVARIANT(id_isar5_el1)
+ FUNCTION_INVARIANT(clidr_el1)
+ FUNCTION_INVARIANT(aidr_el1)
++FUNCTION_INVARIANT(id_aa64pfr0_el1)
++FUNCTION_INVARIANT(id_aa64pfr1_el1)
++FUNCTION_INVARIANT(id_aa64dfr0_el1)
++FUNCTION_INVARIANT(id_aa64isar0_el1)
++FUNCTION_INVARIANT(id_aa64isar1_el1)
++FUNCTION_INVARIANT(id_aa64mmfr0_el1)
++FUNCTION_INVARIANT(id_aa64mmfr1_el1)
++FUNCTION_INVARIANT(id_aa64mmfr2_el1)
+ 
+ /* ->val is filled in by kvm_sys_reg_table_init() */
+ static struct sys_reg_desc invariant_sys_regs[] = {
+@@ -1853,6 +1861,14 @@
+ 	{ SYS_DESC(SYS_ID_ISAR3_EL1), NULL, get_id_isar3_el1 },
+ 	{ SYS_DESC(SYS_ID_ISAR4_EL1), NULL, get_id_isar4_el1 },
+ 	{ SYS_DESC(SYS_ID_ISAR5_EL1), NULL, get_id_isar5_el1 },
++	{ SYS_DESC(SYS_ID_AA64PFR0_EL1), NULL, get_id_aa64pfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64PFR1_EL1), NULL, get_id_aa64pfr1_el1 },
++	{ SYS_DESC(SYS_ID_AA64DFR0_EL1), NULL, get_id_aa64dfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64ISAR0_EL1), NULL, get_id_aa64isar0_el1 },
++	{ SYS_DESC(SYS_ID_AA64ISAR1_EL1), NULL, get_id_aa64isar1_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR0_EL1), NULL, get_id_aa64mmfr0_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR1_EL1), NULL, get_id_aa64mmfr1_el1 },
++	{ SYS_DESC(SYS_ID_AA64MMFR2_EL1), NULL, get_id_aa64mmfr2_el1 },
+ 	{ SYS_DESC(SYS_CLIDR_EL1), NULL, get_clidr_el1 },
+ 	{ SYS_DESC(SYS_AIDR_EL1), NULL, get_aidr_el1 },
+ 	{ SYS_DESC(SYS_CTR_EL0), NULL, get_ctr_el0 },
+@@ -1901,9 +1917,15 @@
+ 	if (err)
+ 		return err;
+ 
+-	/* This is what we mean by invariant: you can't change it. */
+-	if (r->val != val)
+-		return -EINVAL;
++	/*
++	 * QEMU 8.x writes the ID registers back to the kernel during
++	 * KVM_PUT_FULL_STATE. The original "invariant" semantics returned
++	 * -EINVAL for any differing value, which makes QEMU abort with
++	 * "Failed to put registers after init: Invalid argument".
++	 * Accept and ignore the write: the guest still observes the host
++	 * values, as it reads the ID registers directly at EL1.
++	 */
++	(void)val;
+ 
+ 	return 0;
+ }
+@@ -1981,7 +2003,6 @@
+ 		if (get_user(newval, uval))
+ 			return -EFAULT;
+ 
+-		/* This is also invariant: you can't change it. */
+ 		if (newval != get_ccsidr(val))
+ 			return -EINVAL;
+ 		return 0;
