@@ -347,9 +347,11 @@ struct module {
 	const s32 *crcs;
 	unsigned int num_syms;
 
-#ifdef CONFIG_CFI_CLANG
+	/* OPERIT: field kept unconditionally - matches the layout
+	 * and module_layout CRC of the clang-CFI kernel MTK's
+	 * prebuilt modules were built against. */
 	cfi_check_fn cfi_check;
-#endif
+
 
 	/* Kernel parameters. */
 #ifdef CONFIG_SYSFS

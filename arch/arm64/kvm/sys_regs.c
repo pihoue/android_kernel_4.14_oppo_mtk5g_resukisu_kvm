@@ -982,7 +982,7 @@ static const struct sys_reg_desc sys_reg_descs[] = {
 
 	{ SYS_DESC(SYS_CSSELR_EL1), NULL, reset_unknown, CSSELR_EL1 },
 
-	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, },
+	{ SYS_DESC(SYS_PMCR_EL0), access_pmcr, reset_pmcr, PMCR_EL0 },
 	{ SYS_DESC(SYS_PMCNTENSET_EL0), access_pmcnten, reset_unknown, PMCNTENSET_EL0 },
 	{ SYS_DESC(SYS_PMCNTENCLR_EL0), access_pmcnten, NULL, PMCNTENSET_EL0 },
 	{ SYS_DESC(SYS_PMOVSCLR_EL0), access_pmovs, NULL, PMOVSSET_EL0 },
@@ -1834,6 +1834,41 @@ FUNCTION_INVARIANT(id_isar4_el1)
 FUNCTION_INVARIANT(id_isar5_el1)
 FUNCTION_INVARIANT(clidr_el1)
 FUNCTION_INVARIANT(aidr_el1)
+FUNCTION_INVARIANT(id_aa64pfr0_el1)
+FUNCTION_INVARIANT(id_aa64pfr1_el1)
+FUNCTION_INVARIANT(id_aa64dfr0_el1)
+FUNCTION_INVARIANT(id_aa64isar0_el1)
+FUNCTION_INVARIANT(id_aa64isar1_el1)
+FUNCTION_INVARIANT(id_aa64mmfr0_el1)
+FUNCTION_INVARIANT(id_aa64mmfr1_el1)
+FUNCTION_INVARIANT(id_aa64mmfr2_el1)
+
+/*
+ * 以下 12 个 ID 寄存器是 QEMU 8.2 的 kvm_arm_get_host_cpu_features() 在能读到
+ * ID_AA64PFR0_EL1 之后会一并读取的（进入"严格分支"）。任何一个返回 -ENOENT，
+ * QEMU 都会以 "Failed to retrieve host CPU features" 退出。
+ *
+ * 这些寄存器在 Cortex-A55(Armv8.2) 上未必已分配编码，且 clang-11 的汇编器
+ * 不认识其中部分寄存器名，因此统一返回 0 —— 这正是"ID 字段未实现"的架构取值。
+ */
+#define FUNCTION_INVARIANT_ZERO(reg)				\
+	static void get_##reg(struct kvm_vcpu *v,		\
+			      const struct sys_reg_desc *r)		\
+	{							\
+		((struct sys_reg_desc *)r)->val = 0;		\
+	}
+FUNCTION_INVARIANT_ZERO(id_mmfr4_el1)
+FUNCTION_INVARIANT_ZERO(id_isar6_el1)
+FUNCTION_INVARIANT_ZERO(mvfr0_el1)
+FUNCTION_INVARIANT_ZERO(mvfr1_el1)
+FUNCTION_INVARIANT_ZERO(mvfr2_el1)
+FUNCTION_INVARIANT_ZERO(id_pfr2_el1)
+FUNCTION_INVARIANT_ZERO(id_dfr1_el1)
+FUNCTION_INVARIANT_ZERO(id_mmfr5_el1)
+FUNCTION_INVARIANT_ZERO(id_aa64zfr0_el1)
+FUNCTION_INVARIANT_ZERO(id_aa64smfr0_el1)
+FUNCTION_INVARIANT_ZERO(id_aa64dfr1_el1)
+FUNCTION_INVARIANT_ZERO(id_aa64isar2_el1)
 
 /* ->val is filled in by kvm_sys_reg_table_init() */
 static struct sys_reg_desc invariant_sys_regs[] = {
@@ -1853,6 +1888,26 @@ static struct sys_reg_desc invariant_sys_regs[] = {
 	{ SYS_DESC(SYS_ID_ISAR3_EL1), NULL, get_id_isar3_el1 },
 	{ SYS_DESC(SYS_ID_ISAR4_EL1), NULL, get_id_isar4_el1 },
 	{ SYS_DESC(SYS_ID_ISAR5_EL1), NULL, get_id_isar5_el1 },
+	{ SYS_DESC(SYS_ID_MMFR4_EL1), NULL, get_id_mmfr4_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 2, 7)), NULL, get_id_isar6_el1 },
+	{ SYS_DESC(SYS_MVFR0_EL1), NULL, get_mvfr0_el1 },
+	{ SYS_DESC(SYS_MVFR1_EL1), NULL, get_mvfr1_el1 },
+	{ SYS_DESC(SYS_MVFR2_EL1), NULL, get_mvfr2_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 3, 4)), NULL, get_id_pfr2_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 3, 5)), NULL, get_id_dfr1_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 3, 6)), NULL, get_id_mmfr5_el1 },
+	{ SYS_DESC(SYS_ID_AA64PFR0_EL1), NULL, get_id_aa64pfr0_el1 },
+	{ SYS_DESC(SYS_ID_AA64PFR1_EL1), NULL, get_id_aa64pfr1_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 4, 4)), NULL, get_id_aa64zfr0_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 4, 5)), NULL, get_id_aa64smfr0_el1 },
+	{ SYS_DESC(SYS_ID_AA64DFR0_EL1), NULL, get_id_aa64dfr0_el1 },
+	{ SYS_DESC(SYS_ID_AA64DFR1_EL1), NULL, get_id_aa64dfr1_el1 },
+	{ SYS_DESC(SYS_ID_AA64ISAR0_EL1), NULL, get_id_aa64isar0_el1 },
+	{ SYS_DESC(SYS_ID_AA64ISAR1_EL1), NULL, get_id_aa64isar1_el1 },
+	{ SYS_DESC(sys_reg(3, 0, 0, 6, 2)), NULL, get_id_aa64isar2_el1 },
+	{ SYS_DESC(SYS_ID_AA64MMFR0_EL1), NULL, get_id_aa64mmfr0_el1 },
+	{ SYS_DESC(SYS_ID_AA64MMFR1_EL1), NULL, get_id_aa64mmfr1_el1 },
+	{ SYS_DESC(SYS_ID_AA64MMFR2_EL1), NULL, get_id_aa64mmfr2_el1 },
 	{ SYS_DESC(SYS_CLIDR_EL1), NULL, get_clidr_el1 },
 	{ SYS_DESC(SYS_AIDR_EL1), NULL, get_aidr_el1 },
 	{ SYS_DESC(SYS_CTR_EL0), NULL, get_ctr_el0 },
@@ -1901,9 +1956,15 @@ static int set_invariant_sys_reg(u64 id, void __user *uaddr)
 	if (err)
 		return err;
 
-	/* This is what we mean by invariant: you can't change it. */
-	if (r->val != val)
-		return -EINVAL;
+	/*
+	 * QEMU 8.x writes the ID registers back to the kernel during
+	 * KVM_PUT_FULL_STATE. The original "invariant" semantics returned
+	 * -EINVAL for any differing value, which makes QEMU abort with
+	 * "Failed to put registers after init: Invalid argument".
+	 * Accept and ignore the write: the guest still observes the host
+	 * values, as it reads the ID registers directly at EL1.
+	 */
+	(void)val;
 
 	return 0;
 }
@@ -1981,9 +2042,16 @@ static int demux_c15_set(u64 id, void __user *uaddr)
 		if (get_user(newval, uval))
 			return -EFAULT;
 
-		/* This is also invariant: you can't change it. */
-		if (newval != get_ccsidr(val))
-			return -EINVAL;
+		/*
+		 * CCSIDR 是只读的宿主缓存几何视图，内核本就无法"设置"它，
+		 * get 永远返回真实值。而在大小核(big.LITTLE)系统上，
+		 * 生成该值的读操作与本次写回可能落在不同簇，两簇 CCSIDR 不同，
+		 * 于是严格比较会让 QEMU 的 KVM_PUT_FULL_STATE 失败并报
+		 * "Failed to put registers after init: Invalid argument"
+		 * (demux 寄存器会通过 KVM_GET_REG_LIST 暴露并被原值写回)。
+		 * 因此接受写入并忽略其值。
+		 */
+		(void)newval;
 		return 0;
 	default:
 		return -ENOENT;

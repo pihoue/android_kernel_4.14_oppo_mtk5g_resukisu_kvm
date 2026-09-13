@@ -3,6 +3,15 @@
 
 #include <linux/stringify.h>
 
+/* OPERIT: typedef kept available without CFI so that
+ * struct module keeps the same layout (and module_layout CRC) as a
+ * clang-CFI build - required by MTK's prebuilt modules. */
+#ifndef CONFIG_CFI_CLANG
+#ifdef CONFIG_MODULES
+typedef void (*cfi_check_fn)(uint64_t, void *, void *);
+#endif
+#endif
+
 #ifdef CONFIG_CFI_CLANG
 #ifdef CONFIG_MODULES
 

@@ -38,6 +38,16 @@ char * const imgsensor_hw_pin_names[] = {
 #endif
 	"vcamd",
 	"vcamio",
+#ifdef OPLUS_FEATURE_CAMERA_COMMON
+	"afvdd",
+	"avdd_1",
+	"dvdd_1",
+	"vois",
+	"avdd1",
+	"fan53870_enable",
+	"gpio_power_enable",
+#endif
+
 #ifdef MIPI_SWITCH
 	"mipi_switch_en",
 	"mipi_switch_sel",
