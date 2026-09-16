@@ -64,9 +64,6 @@ dd if=/dev/block/sdc bs=4096 count=64 | md5sum
 - **v11**：该表有 `BUG_ON(check_sysreg_table(...))` 严格升序检查，补丁按 `Op0→Op1→CRn→CRm→Op2` 编码升序插入；12 个新增项使用「返回 0」getter（clang-11 汇编器不认识部分 `mrs` 寄存器名，且未分配编码的 MRS 是 UNDEFINED，取值 0 == 该 ID 字段未实现，对纯 AArch64 guest 无影响）。
 - **v12**：`sys_reg_descs[]` 中 `PMCR_EL0` 缺 `.reg`，导致 `index_to_sys_reg_desc()` 把它置空并回退到 invariant 表 → `KVM_GET_ONE_REG` 返回 `-ENOENT`；而 `reset_pmcr()` / `access_pmcr()` 其实一直在读写 `vcpu_sys_reg(vcpu, PMCR_EL0)`，属该 vendor 树的真实缺陷。PMU_V3 可用时 QEMU 一定会读它。
 - **v13**：`docs/kvm/tools/probe_reglist.py` 纯用户态复现了 QEMU 的写回循环 —— `KVM_GET_REG_LIST` 得到 424 项，过滤出 QEMU 会同步的 208 项后逐个「读出来 → 原值写回」。修复前唯一失败项是 `KVM_REG_ARM_DEMUX`（c15 CCSIDR）；A76+A55 大小核两簇 `CCSIDR` 不同（`0x701fe01a` / `0x201fe01a`），读与写两次 ioctl 落在不同簇时严格比较即 `-EINVAL`。CCSIDR 本身只是宿主缓存几何的只读视图，故接受写入并忽略其值。
-
-> `v10`（`CONFIG_MTK_CHARGER_UNLIMITED` 快充开关）经排查证实为**死开关**（`mtk_charger.c` 在本机配置下根本不参与编译，本机充电实际由 OPLUS 栈无条件执行），已还原，补丁 0004 仅作留档，**未采用**。
-
 ---
 
 ## 3. 编译
