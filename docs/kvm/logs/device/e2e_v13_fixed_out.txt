@@ -1,5 +1,0 @@
-  run 1: PASS (rc=0) guest 交互正常, KVM 无错误
-  run 2: PASS (rc=0) guest 交互正常, KVM 无错误
-  run 3: PASS (rc=0) guest 交互正常, KVM 无错误
-E2E_FIXED_PASS=3/3
-E2E_FIXED_DONE

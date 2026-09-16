@@ -1,8 +1,0 @@
-first KVM_GET_REG_LIST errno = 7 (expect 7 E2BIG)
-kernel reports n = 424
-fetched 424 reg ids
-regs on QEMU's cpreg-list path (excl. CORE/FW) = 207
---- 逐个 读->原值写回 ---
-  FAIL id=0x6020000000110000 coproc=0x0011          U32    GET_OK(0x00000000701fe01a)  SET_ERR(22 Invalid argument)
-FAILS = 1
-PROBE_REGLIST_DONE
