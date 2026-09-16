@@ -1,9 +1,0 @@
-#ifdef OPLUS_FEATURE_CAMERA_COMMON
-	"afvdd",
-	"avdd_1",
-	"dvdd_1",
-	"vois",
-	"avdd1",
-	"fan53870_enable",
-	"gpio_power_enable",
-#endif
